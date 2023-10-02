@@ -24,3 +24,9 @@ deactivate
 
 ### Windows
 Please refer to guide [How To Set Up a Virtual Python Environment (Windows)](https://mothergeo-py.readthedocs.io/en/latest/development/how-to/venv-win.html).
+
+### How to run this project
+To run this app:
+<pre>
+python -m src.main <src_folder> <proc_file_name> <res_file_name>
+</pre>
