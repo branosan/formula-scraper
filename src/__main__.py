@@ -10,3 +10,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+# TODO plan
+#   Each website will be used to list all links which will be added to a queue.
+#   We will iterate through the queue to visit all websites
