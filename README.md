@@ -26,9 +26,7 @@ deactivate
 Please refer to guide [How To Set Up a Virtual Python Environment (Windows)](https://mothergeo-py.readthedocs.io/en/latest/development/how-to/venv-win.html).
 
 ### How to run this project
-To run this app write this command while the venv is running:
+To run this app write this command while the <abbr title="Virtual environmnet">venv</abbr> is running:
 <pre>
 python -m src
 </pre>
-
-*[venv]: Virtual environment
