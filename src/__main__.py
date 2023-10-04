@@ -13,7 +13,6 @@ def main(curr_url):
 
         for link in links:
             abs_url = get_absolute(target, link)
-            print(f'MAIN: {abs_url}')
             sub_page = requests.get(abs_url)
             sub_soup = bs(sub_page.text, 'html.parser')
             sub_links = [a.get('href') for a in sub_soup.find_all('a', href=True)]
