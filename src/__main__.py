@@ -1,15 +1,30 @@
 from . import *
 
-def main():
-    # contents of target page
-    page = requests.get(START_SITE)
-    soup = bs(page.text, 'html.parser')
-    # find all hrefs and put them into a list
-    links = soup.find_all('a')
+def main(curr_url):
+    # queue for BFS
+    queue = [curr_url]
+    while queue:
+        target = queue.pop(0)
+        # contents of target page
+        page = requests.get(target)
+        soup = bs(page.text, 'html.parser')
+        # find all hrefs and put them into a list
+        links = [a.get('href') for a in soup.find_all('a', href=True)]
+
+        for link in links:
+            abs_url = get_absolute(target, link)
+            print(f'MAIN: {abs_url}')
+            sub_page = requests.get(abs_url)
+            sub_soup = bs(sub_page.text, 'html.parser')
+            sub_links = [a.get('href') for a in sub_soup.find_all('a', href=True)]
+            # append new links to queue
+            queue.extend(sub_links)
+
 
 
 if __name__ == '__main__':
-    main()
+    curr_url ="https://pitwall.app/" 
+    main(curr_url)
 
 # TODO plan
 #   Each website will be used to list all links which will be added to a queue.
