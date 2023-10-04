@@ -1,32 +1,40 @@
 from . import *
 
-def main(curr_url):
+def main(curr_url, max_depth):
     visited = set()
     # queue for BFS
-    queue = [curr_url]
+    queue = [(curr_url, 0)]
     while queue:
         # TODO check for already visited websites
-        target = queue.pop(0)
-        # contents of target page
-        page = requests.get(target)
-        soup = bs(page.text, 'html.parser')
-        visited.add(target)
-        # find all hrefs and put them into a list
-        links = [a.get('href') for a in soup.find_all('a', href=True)]
+        target, depth = queue.pop(0)
+        
+        if depth > max_depth:
+            continue
 
-        for link in links:
-            abs_url = get_absolute(target, link)
-            sub_page = requests.get(abs_url)
-            sub_soup = bs(sub_page.text, 'html.parser')
-            sub_links = [a.get('href') for a in sub_soup.find_all('a', href=True)]
-            # append new links to queue
-            queue.extend(sub_links)
+        if target not in visited:
+            try:
+                # contents of target page
+                page = requests.get(target)
+                soup = bs(page.text, 'html.parser')
+                visited.add(target)
+            except ConnectionError:
+                print(f'Host {target} could not be resolved. Skipping host.')
+                continue
+            # find all hrefs and put them into a list
+            links = [a.get('href') for a in soup.find_all('a', href=True)]
+
+            for link in links:
+                abs_url = get_absolute(target, link)
+                if is_blacklisted(abs_url):
+                    continue
+                queue.append((abs_url, depth + 1))
 
 
 
 if __name__ == '__main__':
     curr_url ="https://pitwall.app/"
-    main(curr_url)
+    max_depth = 10
+    main(curr_url, max_depth)
 
 # TODO plan
 #   Each website will be used to list all links which will be added to a queue.
