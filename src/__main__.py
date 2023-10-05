@@ -32,7 +32,7 @@ def main(curr_url, max_depth):
 
 
 if __name__ == '__main__':
-    curr_url ="https://pitwall.app/"
+    curr_url = sys.argv[1]
     max_depth = 10
     main(curr_url, max_depth)
 
