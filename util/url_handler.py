@@ -9,7 +9,7 @@ def get_absolute(curr_url, url):
     return urlunparse(parsed_url)
 
 def is_blacklisted(url):
-    black_list = r'(twitter|facebook|instagram).com'
+    black_list = PAGE_BLACK_LIST
     result = urlparse(url)
     if re.search(black_list, result.netloc):
         return True

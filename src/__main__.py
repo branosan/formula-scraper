@@ -1,5 +1,18 @@
 from . import *
 
+# taken from https://stackoverflow.com/questions/1936466/how-to-scrape-only-visible-webpage-text-with-beautifulsoup
+def tag_visible(element):
+    if element.parent.name in ['style', 'script', 'head', 'title', 'meta', '[document]']:
+        return False
+    if isinstance(element, Comment):
+        return False
+    return True
+# taken from https://stackoverflow.com/questions/1936466/how-to-scrape-only-visible-webpage-text-with-beautifulsoup
+def text_from_html(s):
+    texts = s.findAll(text=True)
+    visible_text = filter(tag_visible, texts)
+    return u" ".join(t.strip() for t in visible_text)
+
 def main(curr_url, max_depth):
     visited = set()
     # queue for BFS
@@ -14,8 +27,13 @@ def main(curr_url, max_depth):
         if target not in visited:
             try:
                 # contents of target page
+                # check if page is for a f1 circuit (contains "-grand-prix")
+                # if it does contain grand prix find wiki page for this grand-prix by modifing current xxx-grand-prix to
+                # Xxx_Grand_Prix and concat with wikipedia page
                 page = requests.get(target)
                 soup = bs(page.text, 'html.parser')
+                # print(10*"=")
+                print(text_from_html(soup))
                 visited.add(target)
             except ConnectionError:
                 print(f'Host {target} could not be resolved. Skipping host.')
@@ -33,7 +51,7 @@ def main(curr_url, max_depth):
 
 if __name__ == '__main__':
     curr_url = sys.argv[1]
-    max_depth = 10
+    max_depth = int(sys.argv[2])
     main(curr_url, max_depth)
 
 # TODO plan
