@@ -6,6 +6,9 @@ def tag_visible(element):
         return False
     if isinstance(element, Comment):
         return False
+    # remove white spaces and new lines
+    elif re.match(r"[\s\r\n]+", str(element)):
+        return False
     return True
 # taken from https://stackoverflow.com/questions/1936466/how-to-scrape-only-visible-webpage-text-with-beautifulsoup
 def text_from_html(s):
@@ -32,8 +35,8 @@ def main(curr_url, max_depth):
                 # Xxx_Grand_Prix and concat with wikipedia page
                 page = requests.get(target)
                 soup = bs(page.text, 'html.parser')
-                # print(10*"=")
-                print(text_from_html(soup))
+                # TODO write down data to files
+                # print(text_from_html(soup))
                 visited.add(target)
             except ConnectionError:
                 print(f'Host {target} could not be resolved. Skipping host.')
