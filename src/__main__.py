@@ -1,21 +1,5 @@
 from . import *
 
-# taken from https://stackoverflow.com/questions/1936466/how-to-scrape-only-visible-webpage-text-with-beautifulsoup
-def tag_visible(element):
-    if element.parent.name in ['style', 'script', 'head', 'title', 'meta', '[document]']:
-        return False
-    if isinstance(element, Comment):
-        return False
-    # remove white spaces and new lines
-    elif re.match(r"[\s\r\n]+", str(element)):
-        return False
-    return True
-# taken from https://stackoverflow.com/questions/1936466/how-to-scrape-only-visible-webpage-text-with-beautifulsoup
-def text_from_html(s):
-    texts = s.findAll(string=True)
-    visible_text = filter(tag_visible, texts)
-    return u" ".join(t.strip() for t in visible_text)
-
 if __name__ == '__main__':
     # https://pitwall.app/
     # http://www.f1-grandprix.com/
