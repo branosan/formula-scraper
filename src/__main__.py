@@ -2,7 +2,7 @@ from . import *
 
 if __name__ == '__main__':
     # https://pitwall.app/
-    # http://www.f1-grandprix.com/
+    # https://www.wikiwand.com/en/Formula_One
     max_depth = int(sys.argv[1])
     curr_url = sys.argv[2]
     os.makedirs('./data', exist_ok=True)

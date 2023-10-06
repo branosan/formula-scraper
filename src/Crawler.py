@@ -7,19 +7,28 @@ class Crawler:
         self.max_depth = max_depth
         self.load_index = 0
 
+        # initialize selenium driver
+        self.chrome_options = Options()
+        self.chrome_options.add_argument("--headless=new")
+        self.driver = webdriver.Chrome(options=self.chrome_options)
+
     def crawl(self):
         visited = set()
         queue = [(self.url, 0)]
-        while queue:
-            target, depth = queue.pop(0)
-            
-            if depth > self.max_depth:
-                continue
+        try:
+            while queue:
+                target, depth = queue.pop(0)
+                
+                if depth > self.max_depth:
+                    continue
 
-            if target not in visited:
                 try:
-                    page = requests.get(target)
-                    soup = bs(page.text, 'html.parser')
+                    print(f'Visiting {target}')
+                    self.driver.get(target)
+                    time.sleep(1)
+                    # scroll to the bottom of the page
+                    self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                    soup = bs(self.driver.page_source, 'html.parser')
                     with (open(f'./data/{depth}__{clean_url(target)}.txt', 'w')) as f:
                         f.write(self.text_from_html(soup))
                     visited.add(target)
@@ -29,12 +38,21 @@ class Crawler:
                 # find all hrefs and put them into a list
                 links = [a.get('href') for a in soup.find_all('a', href=True)]
 
+                # iterate through all links and add them to the queue
                 for link in links:
                     self.loading_screen()
                     abs_url = get_absolute(target, link)
-                    if is_blacklisted(abs_url):
+                    if is_blacklisted(abs_url, self.url):
                         continue
-                    queue.append((abs_url, depth + 1))
+                    if abs_url not in visited:
+                        queue.append((abs_url, depth + 1))
+                time.sleep(1)
+        except KeyboardInterrupt:
+            print('\n')
+            print('Closing driver...')
+            self.driver.quit()
+            print('Closing crawler...')
+            print('Exiting...')
 
     def loading_screen(self):
         charset = ['|', '/', '-', '\\']
