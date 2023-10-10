@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup as bs
 from bs4.element import Comment
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.common.exceptions import WebDriverException
 from urllib.parse import urlparse, urlunparse
 from urllib.parse import urljoin
 import requests

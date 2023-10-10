@@ -15,6 +15,7 @@ class Crawler:
     def crawl(self):
         visited = set()
         queue = [(self.url, 0)]
+        # BFS algorithm
         try:
             while queue:
                 target, depth = queue.pop(0)
@@ -25,11 +26,17 @@ class Crawler:
                 if target in visited:
                     continue
 
+                # request website
                 try:
+                    print(f'[LOG] Visting {target}')
                     self.driver.get(target)
-                    time.sleep(0.5)
+                    time.sleep(1)
                     # scroll to the bottom of the page
-                    self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                    try:
+                        self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                    except WebDriverException as we:
+                        print(f'Exception: {we}')
+                        print(f'Could not scroll to bottom of page: {target}')
                     soup = bs(self.driver.page_source, 'html.parser')
                     with (open(f'./data/{depth}__{clean_url(target)}.txt', 'w')) as f:
                         f.write(target + '\n')
@@ -43,12 +50,10 @@ class Crawler:
 
                 # iterate through all links and add them to the queue
                 for link in links:
-                    self.loading_screen()
+                    # self.loading_screen()
                     abs_url = get_absolute(target, link)
                     if is_blacklisted(abs_url, self.url):
                         continue
-                    if abs_url not in visited:
-                        queue.append((abs_url, depth + 1))
                     # branch off to wikipedia pages
                     if is_gp(abs_url):
                         gp_year_name = abs_url.split('/')[-1]
@@ -56,8 +61,11 @@ class Crawler:
                         gp_name = '_'.join(gp_year_name.split('-')[1:]).title()
                         wiki_gp_url = f'https://en.wikipedia.org/wiki/{gp_name}'
                         if wiki_gp_url not in visited:
-                            queue.append((wiki_gp_url, depth + 1))
-                time.sleep(0.5)
+                            print(f'[BRANCH] Adding branch {wiki_gp_url}')
+                            queue.append((wiki_gp_url, 0))
+                    if abs_url not in visited:
+                        queue.append((abs_url, depth + 1))
+            print('Max depth reached. Closing driver...')
             self.driver.quit()
         except KeyboardInterrupt:
             print('\n')

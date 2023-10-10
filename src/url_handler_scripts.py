@@ -2,7 +2,7 @@ from . import *
 
 import re
 
-PAGE_BLACK_LIST = r'(twitter|facebook|instagram|paypal|linkedin)\.com|.*\.php.*\?'
+PAGE_BLACK_LIST = r'(twitter|facebook|instagram|paypal|linkedin)\.com|/.*\.php.*|.+#.+'
 
 def get_absolute(curr_url, url):
     parsed_url = urlparse(url)
@@ -15,23 +15,19 @@ def is_blacklisted(url, base_url):
     black_list = PAGE_BLACK_LIST
     result = urlparse(url)
     # check with black list
-    if re.search(black_list, url):
+    if bool(re.search(black_list, url)):
         return True
     # check if netloc is equal to base_url
     # if not equal then it is an external link and is blacklisted
     return not urlparse(base_url).netloc == result.netloc
-    # try:
-    #     return not bool(result.netloc)
-    # except ValueError:
-    #     return True
-    
+
 def clean_url(url):
     url = re.sub(r'^(https?://)?(www\.)?', '', url)
     return url.replace('/', '_')
 
 def is_gp(url):
-    gp_pattern = r'\/[0-9]+-[a-z,-]+-grand-prix'
-    if re.search(gp_pattern, url):
+    gp_pattern = r'\/[0-9]+-[a-z,-]+-grand-prix$'
+    if bool(re.search(gp_pattern, url)):
         return True
     else :
-        return False
+        return False``
