@@ -30,4 +30,4 @@ def is_gp(url):
     if bool(re.search(gp_pattern, url)):
         return True
     else :
-        return False``
+        return False
