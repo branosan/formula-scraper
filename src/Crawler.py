@@ -21,15 +21,18 @@ class Crawler:
                 
                 if depth > self.max_depth:
                     continue
+                
+                if target in visited:
+                    continue
 
                 try:
-                    print(f'Visiting {target}')
                     self.driver.get(target)
-                    time.sleep(1)
+                    time.sleep(0.5)
                     # scroll to the bottom of the page
                     self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
                     soup = bs(self.driver.page_source, 'html.parser')
                     with (open(f'./data/{depth}__{clean_url(target)}.txt', 'w')) as f:
+                        f.write(target + '\n')
                         f.write(self.text_from_html(soup))
                     visited.add(target)
                 except ConnectionError:
@@ -46,13 +49,23 @@ class Crawler:
                         continue
                     if abs_url not in visited:
                         queue.append((abs_url, depth + 1))
-                time.sleep(1)
+                time.sleep(0.5)
+            self.driver.quit()
         except KeyboardInterrupt:
             print('\n')
             print('Closing driver...')
             self.driver.quit()
             print('Closing crawler...')
             print('Exiting...')
+        # any other exception    
+        except Exception as e:
+            print(f'Error occurted: {e}')
+            print('\n')
+            print('Closing driver...')
+            self.driver.quit()
+            print('Closing crawler...')
+            print('Exiting...')
+            exit(0)
 
     def loading_screen(self):
         charset = ['|', '/', '-', '\\']
@@ -61,19 +74,6 @@ class Crawler:
         print(charset[i], end='\r')
         self.load_index += 1
 
-    # taken from https://stackoverflow.com/questions/1936466/how-to-scrape-only-visible-webpage-text-with-beautifulsoup
-    def tag_visible(self, element):
-        if element.parent.name in ['style', 'script', 'head', 'title', 'meta', '[document]']:
-            return False
-        if isinstance(element, Comment):
-            return False
-        # remove white spaces and new lines
-        elif re.match(r"[\s\r\n]+", str(element)):
-            return False
-        return True
-    
-    # taken from https://stackoverflow.com/questions/1936466/how-to-scrape-only-visible-webpage-text-with-beautifulsoup
     def text_from_html(self, s):
-        texts = s.findAll(string=True)
-        visible_text = filter(self.tag_visible, texts)
-        return u" ".join(t.strip() for t in visible_text)
+        texts = s.get_text()
+        return re.sub(r'[\s\r\n]+', ' ', texts)

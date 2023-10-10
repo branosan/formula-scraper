@@ -28,3 +28,6 @@ def is_blacklisted(url, base_url):
 def clean_url(url):
     url = re.sub(r'^(https?://)?(www\.)?', '', url)
     return url.replace('/', '_')
+
+def add_wikipedia():
+    pass
