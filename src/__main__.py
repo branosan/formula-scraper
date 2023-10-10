@@ -1,7 +1,7 @@
 from . import *
 
 if __name__ == '__main__':
-    # https://pitwall.app/
+    # https://pitwall.app/seasons
     # https://www.wikiwand.com/en/Formula_One
     max_depth = int(sys.argv[1])
     curr_url = sys.argv[2]

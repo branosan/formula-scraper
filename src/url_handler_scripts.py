@@ -29,5 +29,9 @@ def clean_url(url):
     url = re.sub(r'^(https?://)?(www\.)?', '', url)
     return url.replace('/', '_')
 
-def add_wikipedia():
-    pass
+def is_gp(url):
+    gp_pattern = r'\/[0-9]+-[a-z,-]+-grand-prix'
+    if re.search(gp_pattern, url):
+        return True
+    else :
+        return False
