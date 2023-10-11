@@ -3,13 +3,19 @@ from . import *
 import re
 
 PAGE_BLACK_LIST = r'(twitter|facebook|instagram|paypal|linkedin)\.com|/.*\.php.*|.+#.+'
-# (?<=\")(http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+)|(/.+)(?=\")
+BANNED_FILE_EXTENSIONS = r'(?<!\.(?:png))(?<!\.(?:css))(?<!\.(?:jpg))(?<!\.(?:gif))(?<!\.(?:js))(?<!\.(?:php))(?<!\.(?:bmp))(?<!\.(?:pdf))(?<!\.(?:docx))(?<!\.(?:jpeg))'
+LINK_REGEX = r'href=[\"\'](https?://\S+|/\S+)' + BANNED_FILE_EXTENSIONS + r'\b[\"\']'
+# better regex href=[\"\'](https?://\S+|/\S+).*[\"\']
+# even better href=[\"\'](https?://\S+|/\S+)(?<!\.(?:png))(?<!\.(?:css))\b[\"\']
 def get_absolute(curr_url, url):
     parsed_url = urlparse(url)
     if not bool(parsed_url.netloc):
         parsed_url = urljoin(curr_url, url)
         return parsed_url
     return urlunparse(parsed_url)
+
+def find_links(soup):
+    return re.findall(LINK_REGEX, str(soup))
 
 def is_blacklisted(url, base_url):
     black_list = PAGE_BLACK_LIST

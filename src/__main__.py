@@ -20,3 +20,5 @@ if __name__ == '__main__':
 # TODO 
 # natahat html zo vsetkych stranok nemenit ich
 # vytvorit index z html
+# otazky:
+# - 
