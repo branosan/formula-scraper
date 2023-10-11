@@ -38,9 +38,6 @@ class Crawler:
                         print(f'Exception: {we}')
                         print(f'Could not scroll to bottom of page: {target}')
                     soup = bs(self.driver.page_source, 'html.parser')
-                    with(open(f'./test.txt', 'w')) as f:
-                        f.write(str(find_links(str(soup))))
-                    exit(0)
                     with (open(f'./data/{depth}__{clean_url(target)}.txt', 'w')) as f:
                         f.write(target + '\n')
                         f.write(self.text_from_html(soup))
@@ -49,7 +46,8 @@ class Crawler:
                     print(f'Host {target} could not be resolved. Skipping host.')
                     continue
                 # find all hrefs and put them into a list
-                links = [a.get('href') for a in soup.find_all('a', href=True)]
+                # links = [a.get('href') for a in soup.find_all('a', href=True)]
+                links = find_links(soup)
 
                 # iterate through all links and add them to the queue
                 for link in links:

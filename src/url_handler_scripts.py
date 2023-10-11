@@ -3,10 +3,10 @@ from . import *
 import re
 
 PAGE_BLACK_LIST = r'(twitter|facebook|instagram|paypal|linkedin)\.com|/.*\.php.*|.+#.+'
-BANNED_FILE_EXTENSIONS = r'(?<!\.(?:png))(?<!\.(?:css))(?<!\.(?:jpg))(?<!\.(?:gif))(?<!\.(?:js))(?<!\.(?:php))(?<!\.(?:bmp))(?<!\.(?:pdf))(?<!\.(?:docx))(?<!\.(?:jpeg))'
-LINK_REGEX = r'href=[\"\'](https?://\S+|/\S+)' + BANNED_FILE_EXTENSIONS + r'\b[\"\']'
-# better regex href=[\"\'](https?://\S+|/\S+).*[\"\']
+# better regex href=[\"\'](https?://\S+|/\S+)(?<!\.(?:png))(?<!\.(?:json))(?<!\.(?:svg))(?<!\.(?:ico))(?!#\w+)\b[\"\']
 # even better href=[\"\'](https?://\S+|/\S+)(?<!\.(?:png))(?<!\.(?:css))\b[\"\']
+# the best href=[\"\'](https?://((\w+)\.)+\w+(/[\w-]+)+|(/[\w-]+)+)\b[\"\']
+LINK_REGEX = r'href=[\"\'](https?://[\w+\.]+\w+[/\w-]+|[/\w-]+)\b[\"\']'
 def get_absolute(curr_url, url):
     parsed_url = urlparse(url)
     if not bool(parsed_url.netloc):
