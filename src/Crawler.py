@@ -23,6 +23,9 @@ class Crawler:
                 if depth > self.max_depth:
                     continue
                 
+                if os.path.exists(f'./data/{target}/page.txt'):
+                    continue
+
                 if target in visited:
                     continue
 
@@ -38,9 +41,10 @@ class Crawler:
                         print(f'Exception: {we}')
                         print(f'Could not scroll to bottom of page: {target}')
                     soup = bs(self.driver.page_source, 'html.parser')
-                    with (open(f'./data/{depth}__{clean_url(target)}.txt', 'w')) as f:
+                    os.makedirs(f"data/{target}", exist_ok=True)
+                    with (open(f'./data/{target}/page.txt', 'w')) as f:
                         f.write(target + '\n')
-                        f.write(self.text_from_html(soup))
+                        f.write(str(soup))
                     visited.add(target)
                 except ConnectionError:
                     print(f'Host {target} could not be resolved. Skipping host.')
