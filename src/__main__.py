@@ -3,6 +3,10 @@ from . import *
 if __name__ == '__main__':
     # https://pitwall.app/seasons
     # https://www.wikiwand.com/en/Formula_One
+    if os.name == 'posix':  # Unix/Linux/MacOS
+        os.system('clear')
+    elif os.name == 'nt':  # Windows
+        os.system('cls')
     max_depth = int(sys.argv[1])
     curr_url = sys.argv[2]
     os.makedirs('./data', exist_ok=True)
@@ -22,3 +26,6 @@ if __name__ == '__main__':
 # vytvorit index z html
 # otazky:
 # - 
+# vybrat entity ktore nas zaujimaju napriklad jazdci a okruhy na ktorych vyhrali
+# pouzit paralelizovane vypocty na skratenie casu
+# pre kazdy crawlnuty dokument si chceme vytvorit vector v priestore
