@@ -36,13 +36,16 @@ class Crawler:
                 try:
                     self.driver.get(target)
                     time.sleep(1)
-                    # scroll to the bottom of the page
-                    try:
-                        self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                    except WebDriverException as we:
-                        log([f'Exception: {we}', f'Could not scroll to bottom of page: {target}'])
-                    
-                    soup = bs(self.driver.page_source, 'html.parser')
+                    if os.path.exists(f'{target}/page.txt'):
+                        with open(f'{target}/page.txt', 'r') as f:
+                            soup = bs(f.read(), 'html.parser')
+                    else:
+                        try:
+                            # scroll to the bottom of the page to load all elements
+                            self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                        except WebDriverException as we:
+                            log([f'Exception: {we}', f'Could not scroll to bottom of page: {target}'])
+                        soup = bs(self.driver.page_source, 'html.parser')
                     
                     os.makedirs(f"data/{target}", exist_ok=True)
                     with (open(f'./data/{target}/page.txt', 'w')) as f:
@@ -58,7 +61,7 @@ class Crawler:
                 # iterate through all links and add them to the queue
                 for link in links:
                     abs_url = get_absolute(target, link)
-                    if is_blacklisted(abs_url, self.url):
+                    if is_blacklisted(abs_url, target):
                         continue
                     # branch off to wikipedia pages
                     if is_gp(abs_url):
@@ -73,6 +76,10 @@ class Crawler:
                 log([f'Visited {target}', f'Queue size: {len(queue)}'])
             print('Max depth reached. Closing driver...')
             self.driver.quit()
+            print('Backing up queue...')
+            self.backup_queue(queue)
+            print('Backing up visited...')
+            self.backup_visited(queue)
         except KeyboardInterrupt:
             log(['KeyboardInterrupt'])
             print('Closing driver...')
