@@ -3,13 +3,19 @@ from . import *
 import re
 
 PAGE_BLACK_LIST = r'(twitter|facebook|instagram|paypal|linkedin)\.com|/.*\.php.*|.+#.+'
-# (?<=\")(http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+)|(/.+)(?=\")
+# better regex href=[\"\'](https?://\S+|/\S+)(?<!\.(?:png))(?<!\.(?:json))(?<!\.(?:svg))(?<!\.(?:ico))(?!#\w+)\b[\"\']
+# even better href=[\"\'](https?://\S+|/\S+)(?<!\.(?:png))(?<!\.(?:css))\b[\"\']
+# the best href=[\"\'](https?://((\w+)\.)+\w+(/[\w-]+)+|(/[\w-]+)+)\b[\"\']
+LINK_REGEX = r'href=[\"\'](https?://[\w+\.]+\w+[/\w-]+|[/\w-]+)\b[\"\']'
 def get_absolute(curr_url, url):
     parsed_url = urlparse(url)
     if not bool(parsed_url.netloc):
         parsed_url = urljoin(curr_url, url)
         return parsed_url
     return urlunparse(parsed_url)
+
+def find_links(soup):
+    return re.findall(LINK_REGEX, str(soup))
 
 def is_blacklisted(url, base_url):
     black_list = PAGE_BLACK_LIST

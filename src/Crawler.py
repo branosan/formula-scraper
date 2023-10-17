@@ -14,45 +14,54 @@ class Crawler:
 
     def crawl(self):
         visited = set()
-        queue = [(self.url, 0)]
+        queue = [[self.url, 0]]
+        # load queue from backup file
+        try:
+            queue = self.load_queue()
+            visited = self.load_visited()
+        except FileNotFoundError:
+            log(['No queue/visited backup found. Starting from scratch...'])
+
         # BFS algorithm
         try:
             while queue:
                 target, depth = queue.pop(0)
-                
                 if depth > self.max_depth:
                     continue
-                
+
                 if target in visited:
                     continue
 
                 # request website
                 try:
-                    print(f'[LOG] Visting {target}')
                     self.driver.get(target)
                     time.sleep(1)
-                    # scroll to the bottom of the page
-                    try:
-                        self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                    except WebDriverException as we:
-                        print(f'Exception: {we}')
-                        print(f'Could not scroll to bottom of page: {target}')
-                    soup = bs(self.driver.page_source, 'html.parser')
-                    with (open(f'./data/{depth}__{clean_url(target)}.txt', 'w')) as f:
+                    if os.path.exists(f'{target}/page.txt'):
+                        with open(f'{target}/page.txt', 'r') as f:
+                            soup = bs(f.read(), 'html.parser')
+                    else:
+                        try:
+                            # scroll to the bottom of the page to load all elements
+                            self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                        except WebDriverException as we:
+                            log([f'Exception: {we}', f'Could not scroll to bottom of page: {target}'])
+                        soup = bs(self.driver.page_source, 'html.parser')
+                    
+                    os.makedirs(f"data/{target}", exist_ok=True)
+                    with (open(f'./data/{target}/page.txt', 'w')) as f:
                         f.write(target + '\n')
-                        f.write(self.text_from_html(soup))
+                        f.write(str(soup))
                     visited.add(target)
                 except ConnectionError:
-                    print(f'Host {target} could not be resolved. Skipping host.')
+                    log([f'Host {target} could not be resolved. Skipping host.'])
                     continue
+                
                 # find all hrefs and put them into a list
-                links = [a.get('href') for a in soup.find_all('a', href=True)]
-
+                links = find_links(soup)
                 # iterate through all links and add them to the queue
                 for link in links:
-                    # self.loading_screen()
                     abs_url = get_absolute(target, link)
-                    if is_blacklisted(abs_url, self.url):
+                    if is_blacklisted(abs_url, target):
                         continue
                     # branch off to wikipedia pages
                     if is_gp(abs_url):
@@ -61,35 +70,55 @@ class Crawler:
                         gp_name = '_'.join(gp_year_name.split('-')[1:]).title()
                         wiki_gp_url = f'https://en.wikipedia.org/wiki/{gp_name}'
                         if wiki_gp_url not in visited:
-                            print(f'[BRANCH] Adding branch {wiki_gp_url}')
-                            queue.append((wiki_gp_url, 0))
+                            queue.append([wiki_gp_url, 0])
                     if abs_url not in visited:
-                        queue.append((abs_url, depth + 1))
+                        queue.append([abs_url, depth + 1])
+                log([f'Visited {target}', f'Queue size: {len(queue)}'])
             print('Max depth reached. Closing driver...')
             self.driver.quit()
+            print('Backing up queue...')
+            self.backup_queue(queue)
+            print('Backing up visited...')
+            self.backup_visited(queue)
         except KeyboardInterrupt:
-            print('\n')
+            log(['KeyboardInterrupt'])
             print('Closing driver...')
             self.driver.quit()
-            print('Closing crawler...')
+            print('Backing up queue...')
+            self.backup_queue(queue)
+            print('Backing up Visisted...')
+            self.backup_visited(visited)
             print('Exiting...')
         # any other exception    
         except Exception as e:
-            print(f'Error occurted: {e}')
-            print('\n')
+            log(['Unknown error', f'Exception {e}'])
             print('Closing driver...')
             self.driver.quit()
-            print('Closing crawler...')
+            print('Backing up queue...')
+            self.backup_queue(queue)
+            print('Backing up Visisted...')
+            self.backup_visited(visited)
             print('Exiting...')
-            exit(0)
-
-    def loading_screen(self):
-        charset = ['|', '/', '-', '\\']
-        print('Crawliing...', end='')
-        i = self.load_index % (len(charset) - 1)
-        print(charset[i], end='\r')
-        self.load_index += 1
+            exit(1)
 
     def text_from_html(self, s):
         texts = s.get_text()
         return re.sub(r'[\s\r\n]+', ' ', texts)
+    
+    def backup_queue(self, queue):
+        with open('./backup/queue.json', 'w') as json_file:
+            json.dump(queue, json_file)
+    
+    def load_queue(self):
+        with open('./backup/queue.json', 'r') as json_file:
+            loaded_queue = json.load(json_file)
+        return loaded_queue
+    
+    def backup_visited(self, visited):
+        with open('./backup/visited.json', 'w') as json_file:
+            json.dump(visited, json_file)
+    
+    def load_visited(self):
+        with open('./backup/visited.json', 'r') as json_file:
+            loaded_visited = json.load(json_file)
+        return loaded_visited

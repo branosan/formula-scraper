@@ -28,5 +28,5 @@ Please refer to guide [How To Set Up a Virtual Python Environment (Windows)](htt
 ### How to run this project
 To run this app write this command while the <abbr title="Virtual environmnet">venv</abbr> is running:
 <pre>
-python -m src <max_depth> <domain>
+python -m src
 </pre>
