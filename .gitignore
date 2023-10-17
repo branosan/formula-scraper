@@ -1,2 +1,5 @@
 vinf_venv/
 data/
+.DS_Store
+backup/
+fulltext.txt
