@@ -8,7 +8,8 @@ def clear_screen():
 
 
 def get_text():
-    full_text = open("fulltext.txt", "a+")
+    os.makedirs('./procesed_data', exist_ok=True)
+    full_text = open('./procesed_data/fulltext.txt', 'a+')
 
     file_structure = list(os.walk('./data', topdown=True))
     structure_size = len(file_structure)
