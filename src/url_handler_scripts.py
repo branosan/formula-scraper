@@ -32,8 +32,8 @@ def clean_url(url):
     return url.replace('/', '_')
 
 def is_gp(url):
-    gp_pattern = r'\/[0-9]+-[a-z,-]+-grand-prix$'
-    if bool(re.search(gp_pattern, url)):
+    # gp_pattern = r'\/[0-9]+-[a-z,-]+-grand-prix$'
+    if bool(re.search(GP_PATTERN, url)):
         return True
     else :
         return False

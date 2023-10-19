@@ -16,3 +16,6 @@ import json
 from src.url_handler_scripts import get_absolute, is_blacklisted, clean_url, is_gp, find_links
 from src.loging import log
 from .Crawler import Crawler
+
+HEADERS = 'YEAR;GP NAME;POS;DRIVER NAME;TEAM NAME;LAP TIME;GRID;LAPS;POINTS'
+GP_PATTERN = r'\/[0-9]+-[a-z,-]+-grand-prix$'
