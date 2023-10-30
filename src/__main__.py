@@ -1,4 +1,5 @@
 from . import *
+from .indexer import create_tfidf
 
 def clear_screen():
     if os.name == 'posix':  # Unix/Linux/MacOS
@@ -26,6 +27,24 @@ def get_text():
         
 
     full_text.close()
+
+def create_documents():
+    file_structure = list(os.walk('./data', topdown=True))
+    structure_size = len(file_structure)
+    for n, (path, dirs, files) in enumerate(file_structure):
+        # skip if already processed
+        if 'page.txt' in files:
+            continue
+        if 'page.html' in files:
+            text_file = open(f'{path}/page.txt', 'w')
+            try:
+                with open(f'{path}/page.html', 'r') as f:
+                    print(f'{n}/{structure_size}', end='\r')
+                    content = bs(f.read(), 'html.parser')
+                    text_file.write(content.get_text())
+                    text_file.close()
+            except:
+                print(f'ERROR {path}')
 
 def find_entities():
     output = open('./procesed_data/entities.csv', 'w')
@@ -88,6 +107,8 @@ if __name__ == '__main__':
 [c] Launch crawler "c <max_depth> <url>"
 [s] Full text search "s <string>"
 [t] Create full text file  
+[d] Create documents for each hmtl file
+[i] Create tf-idf
 [e] Find entities                      
 [q] Quit
 ''')
@@ -106,6 +127,11 @@ if __name__ == '__main__':
         elif argv[0].lower() == 't':
             print('Creating full text file...')
             get_text()
+        elif argv[0].lower() == 'd':
+            print('Creating documents...')
+            create_documents()    
+        elif argv[0].lower() == 'i':
+            create_tfidf()
         elif argv[0].lower() == 'e':
             find_entities()
         elif argv[0].lower() == 'q':
