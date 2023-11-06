@@ -1,5 +1,5 @@
 from . import *
-from .indexer import create_tfidf
+from .indexer import create_tfidf, lookup_document
 
 def clear_screen():
     if os.name == 'posix':  # Unix/Linux/MacOS
@@ -108,7 +108,8 @@ if __name__ == '__main__':
 [s] Full text search "s <string>"
 [t] Create full text file  
 [d] Create documents for each hmtl file
-[i] Create tf-idf
+[i] Create index
+[f] Look for a pattern in the full text file                     
 [e] Find entities                      
 [q] Quit
 ''')
@@ -131,7 +132,13 @@ if __name__ == '__main__':
             print('Creating documents...')
             create_documents()    
         elif argv[0].lower() == 'i':
-            create_tfidf()
+            create_tfidf(dir='./data')
+        elif argv[0].lower() == 'f':
+            pattern = input('Enter a pattern: ')
+            top_docs = lookup_document(pattern)
+            # print top documents
+            _ = [print(doc) for doc in top_docs]
+            _ = input('Press ENTER to continue...')
         elif argv[0].lower() == 'e':
             find_entities()
         elif argv[0].lower() == 'q':

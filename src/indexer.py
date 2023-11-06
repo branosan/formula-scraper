@@ -7,7 +7,7 @@ def create_tfidf(dir='./data/https:/pitwall.app/races'):
     structure_size = len(file_structure)
     # contains tuples of (path, files content)
     corpus = []
-    print('[1/4]Reading files...')
+    print('[1/2]Reading files...')
     for n, (path, dirs, files) in enumerate(file_structure):
         # skip if already processed
         if 'page.txt' in files:
@@ -22,52 +22,62 @@ def create_tfidf(dir='./data/https:/pitwall.app/races'):
     print('')
     print('[DONE]')
     
-    print('[2/4]Computing tf...', end='\r')
-    tf_documents = [(path, compute_tf(words)) for path, words in corpus]
-    print('')
-    print('[DONE]')
-    
-    print('[3/4]Computing idf...')
-    idf = {}
-    
-    total_len = len(corpus)
-    i = 0
-
+    print('[2/2]Computing tf...', end='\r')
+    # TODO commented to simplify indexing
+    # tf_documents = [(path, compute_tf(words)) for path, words in corpus]
+    tf_documents = {}
     for path, words in corpus:
-        i += 1
-        print(f'Document: {i}/{total_len}', end='\r')
-        for word in words:
-            idf[word] = compute_idf(corpus, word)
-    
-    with open('./backup/idf.json', 'w') as json_file:
-            json.dump(idf, json_file)
+        print(f'Computing tf for: {path}')
+        tf_documents[path] = compute_tf(words)
+
+    with open('./backup/tf.json', 'w') as json_file:
+            json.dump(tf_documents, json_file) 
     print('')
     print('[DONE]')
+
+    # END HERE
+    # TODO commented to simplify indexing
+    # print('[3/4]Computing idf...')
+    # idf = {}
     
-    print('[4/4]Computing tf-idf...')
-    # tfidf_documents contains
-    # { 
-    #   <path>: {<word>: tfidf_value, ...},
-    #  ...
-    # }
-    i = 0
-    tfidf_documents = {}
-    for path, tf in tf_documents:
-        tfidf_dict = {}
+    # total_len = len(corpus)
+    # i = 0
 
-        i += 1
-        print(f'Document: {i}/{total_len}', end='\r')
+    # for path, words in corpus:
+    #     i += 1
+    #     print(f'Document: {i}/{total_len}', end='\r')
+    #     for word in words:
+    #         idf[word] = compute_idf(corpus, word)
+    
+    # with open('./backup/idf.json', 'w') as json_file:
+    #         json.dump(idf, json_file)
+    # print('')
+    # print('[DONE]')
+    
+    # print('[4/4]Computing tf-idf...')
+    # # tfidf_documents contains
+    # # { 
+    # #   <path>: {<word>: tfidf_value, ...},
+    # #  ...
+    # # }
+    # i = 0
+    # tfidf_documents = {}
+    # for path, tf in tf_documents:
+    #     tfidf_dict = {}
 
-        for word, tf_value in tf.items():
-            idf_value = idf.get(word, 0)
-            tfidf_value = tf_value * idf_value
-            tfidf_dict[word] = tfidf_value
-        tfidf_documents[path] = tfidf_dict
-    print('[DONE]')
+    #     i += 1
+    #     print(f'Document: {i}/{total_len}', end='\r')
 
-    print('Writing tf-idf to file...')
-    with open('./backup/tfidf.json', 'w') as json_file:
-            json.dump(tfidf_documents, json_file)
+    #     for word, tf_value in tf.items():
+    #         idf_value = idf.get(word, 0)
+    #         tfidf_value = tf_value * idf_value
+    #         tfidf_dict[word] = tfidf_value
+    #     tfidf_documents[path] = tfidf_dict
+    # print('[DONE]')
+
+    # print('Writing tf-idf to file...')
+    # with open('./backup/tfidf.json', 'w') as json_file:
+    #         json.dump(tfidf_documents, json_file)
     # with open('./backup/idf.json', 'w') as json_file:
     #         json.dump(idf, json_file)
 
@@ -75,18 +85,24 @@ def lookup_document(prompt):
     # compute tf for the prompt
     tf_prompt = compute_tf(clean_text(prompt))
     idf = {}
-    tfidf_documents = {}
-    with open('./backup/tfidf.json', 'r') as json_file:
-        tfidf_documents = json.load(json_file)
-    with open('./backup/idf.json', 'w') as json_file:
-            idf = json.load(json_file)
+    tf_documents = {}
+    # TODO commented to simplify indexing
+    # with open('./backup/tfidf.json', 'r') as json_file:
+    #     tfidf_documents = json.load(json_file)
+    # with open('./backup/idf.json', 'w') as json_file:
+    #         idf = json.load(json_file)
+    with open('./backup/tf.json', 'r') as json_file:
+        tf_documents = json.load(json_file)
 
-    tfidf_prompt = {}
-    for word, tf in tf_prompt.items():
-        idf_value = idf.get(word, 0)
-        tfidf_prompt[word] = tf * idf_value
+    # TODO commented to simplify indexing
+    # tfidf_prompt = {}
+    # for word, tf in tf_prompt.items():
+    #     idf_value = idf.get(word, 0)
+    #     tfidf_prompt[word] = tf * idf_value
 
-    similarities = [(path, cosine_similarity(tfidf_prompt, tfidf_doc)) for path, tfidf_doc in tfidf_documents.items()]
+    similarities = [(path, cosine_similarity(tf_prompt, tf_doc)) for path, tf_doc in tf_documents.items()]
+    # TODO commented to simplify indexing
+    # similarities = [(path, cosine_similarity(tfidf_prompt, tfidf_doc)) for path, tfidf_doc in tfidf_documents.items()]
     similarities.sort(key=lambda x: x[1], reverse=True)
     return similarities[:10]
 
