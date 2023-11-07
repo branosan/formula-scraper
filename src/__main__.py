@@ -153,18 +153,3 @@ if __name__ == '__main__':
         else:
             print('Invalid command', end='\r')
             time.sleep(2)
-
-# TODO plan
-#   Each website will be used to list all links which will be added to a queue.
-#   We will iterate through the queue to visit all websites
-#   make a table with words their frequency and code of ducment in which the words is located
-#   implement potrer - reduce all words to their stems == easier look up
-
-# TODO 
-# natahat html zo vsetkych stranok nemenit ich
-# vytvorit index z html
-# otazky:
-# - 
-# vybrat entity ktore nas zaujimaju napriklad jazdci a okruhy na ktorych vyhrali
-# pouzit paralelizovane vypocty na skratenie casu
-# pre kazdy crawlnuty dokument si chceme vytvorit vector v priestore
