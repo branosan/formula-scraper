@@ -1,5 +1,6 @@
 from . import *
 from .indexer import create_tfidf, lookup_document
+from .pylucene_indexer import test_index
 
 def clear_screen():
     if os.name == 'posix':  # Unix/Linux/MacOS
@@ -103,13 +104,15 @@ if __name__ == '__main__':
     while True:
         clear_screen()
         argv = input('''
-===============Menu===============
+=========================Menu===========================
 [c] Launch crawler "c <max_depth> <url>"
 [s] Full text search "s <string>"
-[t] Create full text file  
 [d] Create documents for each hmtl file
+[f] Look for a pattern in the full text file    
+--------------------Called only once--------------------
 [i] Create index
-[f] Look for a pattern in the full text file                     
+[p] Create PyLucene index
+[t] Create full text file                 
 [e] Find entities                      
 [q] Quit
 ''')
@@ -139,6 +142,8 @@ if __name__ == '__main__':
             # print top documents
             _ = [print(doc) for doc in top_docs]
             _ = input('Press ENTER to continue...')
+        elif argv[0].lower() == 'p':
+            test_index()
         elif argv[0].lower() == 'e':
             find_entities()
         elif argv[0].lower() == 'q':
