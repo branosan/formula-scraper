@@ -1,5 +1,6 @@
 vinf_venv/
 data/
-.DS_Store
 backup/
+procesed_data/
+.DS_Store
 fulltext.txt

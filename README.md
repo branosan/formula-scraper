@@ -1,5 +1,17 @@
 ## About this app
 This is my semestral project for the course Information retrieval taught at Slovak University of technology in Bratislava Faculty of Informatics and Information Technology.
+## Entity structure
+The aim of this project is to look up information from freely accessible websites about formula 1. Entities for this project will be:
+- Grand prix
+- Drivers/Pilots
+- Team they are driving for
+- Position they finished the race at
+- Their nationality
+- Points after the race
+Entities will be structured in the resulting `.tsv` file as follows:
+<pre>
+GRAND PRIX | POSITION | DRIVER NAME | TEAM | | NATIONALITY | POINTS
+</pre>
 ## Setup
 ### LINUX/MACOS
 1. If there is no virtual environment you'll need to create one using:
