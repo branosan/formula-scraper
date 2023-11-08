@@ -13,6 +13,7 @@ import os
 import time
 import json
 import math
+import pandas as pd
 
 from src.url_handler_scripts import get_absolute, is_blacklisted, clean_url, is_gp, find_links
 from src.loging import log

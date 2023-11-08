@@ -29,6 +29,7 @@ def test_index():
 
     writer = IndexWriter(index_directory, config)
 
+    # load all files in the data directory
     documents = []
     doc_path = 'data/https:/en.wikipedia.org/wiki/1992_Canadian_Grand_Prix/page.txt'
     with open(doc_path, 'r', encoding='utf-8') as f:

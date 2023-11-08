@@ -1,6 +1,13 @@
 from . import *
 from .indexer import create_tfidf, lookup_document
-from .pylucene_indexer import test_index
+# from .pylucene_indexer import test_index
+from .queries import find_pairs, find_most_wins, find_collegues
+
+# TODO:
+# Na co mam pouzit wikipedia dump? Predpokladam ze si ho nebudem indexovat pretoze to by trvalo dlho
+# Mam na nom robit len vyhladavanie cez entity?
+# - zadam nejake slovo a to potom vlozim do regexu co bude fungovat ako nejaky pattern
+#   a cez neho vyhladam vo vsetkych dokumentoch nejaku info ktora ma zaujima
 
 def clear_screen():
     if os.name == 'posix':  # Unix/Linux/MacOS
@@ -108,7 +115,8 @@ if __name__ == '__main__':
 [c] Launch crawler "c <max_depth> <url>"
 [s] Full text search "s <string>"
 [d] Create documents for each hmtl file
-[f] Look for a pattern in the full text file    
+[f] Look for a pattern in the full text file 
+[l] Entity lookup
 --------------------Called only once--------------------
 [i] Create index
 [p] Create PyLucene index
@@ -146,6 +154,25 @@ if __name__ == '__main__':
             test_index()
         elif argv[0].lower() == 'e':
             find_entities()
+        elif argv[0].lower() == 'l':
+            choice = input('''
+[1] Find when two pilots met in a grand prix
+[2] Find pilots with most wins in a grand prix
+[3] Find if two drivers've driven for the same team
+                           ''')
+            if choice == '1':
+                p1 = input('Enter name of the first pilot: ')
+                p2 = input('Enter name of the second pilot: ')
+                year = input('Enter year: ')
+                print(find_pairs(p1, p2, year))
+            elif choice == '2':
+                gp_name = input('Enter name of the grand prix: ')
+                print(find_most_wins(gp_name))
+            elif choice == '3':
+                p1 = input('Enter name of the first pilot: ')
+                p2 = input('Enter name of the second pilot: ')
+                print(find_collegues(p1, p2))
+            _ = input('Press ENTER to continue...')
         elif argv[0].lower() == 'q':
             print('Quiting...')
             time.sleep(1)
