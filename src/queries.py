@@ -1,5 +1,9 @@
 from . import *
 
+# !!!!
+# Deprecated queries which wont be used in the final version
+# !!!!
+
 def find_pairs(p1, p2, year):
     """
     Returns a dataframe of grand prix in which both pilot1 and pilot2 were driving

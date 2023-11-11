@@ -2,12 +2,12 @@ from . import *
 from .indexer import create_tfidf, lookup_document
 # from .pylucene_indexer import test_index
 from .queries import find_pairs, find_most_wins, find_collegues
+from .xml_parser import extract_pages_xml_stream
 
 # TODO:
-# Na co mam pouzit wikipedia dump? Predpokladam ze si ho nebudem indexovat pretoze to by trvalo dlho
-# Mam na nom robit len vyhladavanie cez entity?
-# - zadam nejake slovo a to potom vlozim do regexu co bude fungovat ako nejaky pattern
-#   a cez neho vyhladam vo vsetkych dokumentoch nejaku info ktora ma zaujima
+# Odtestovat ci funguje vyhladavanie v pylucene
+# Najprv najst veci cez queri teda nejake mena jazdcov a rok zadat a to najde kedy sa aky jazdci stretli
+#    nasledne z query vybrat regexom napr. meno velkej ceny a rok a najst v tom roku kto vyhral na velkej cene
 
 def clear_screen():
     if os.name == 'posix':  # Unix/Linux/MacOS
@@ -121,7 +121,8 @@ if __name__ == '__main__':
 [i] Create index
 [p] Create PyLucene index
 [t] Create full text file                 
-[e] Find entities                      
+[e] Find entities
+[x] Extract pages from xml dump                    
 [q] Quit
 ''')
         argv = argv.split(' ')
@@ -159,7 +160,7 @@ if __name__ == '__main__':
 [1] Find when two pilots met in a grand prix
 [2] Find pilots with most wins in a grand prix
 [3] Find if two drivers've driven for the same team
-                           ''')
+''')
             if choice == '1':
                 p1 = input('Enter name of the first pilot: ')
                 p2 = input('Enter name of the second pilot: ')
@@ -173,6 +174,9 @@ if __name__ == '__main__':
                 p2 = input('Enter name of the second pilot: ')
                 print(find_collegues(p1, p2))
             _ = input('Press ENTER to continue...')
+        elif argv[0].lower() == 'x':
+            extract_pages_xml_stream()
+            _ = input('Press enter to continue...')
         elif argv[0].lower() == 'q':
             print('Quiting...')
             time.sleep(1)
