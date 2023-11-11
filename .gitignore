@@ -1,6 +1,7 @@
 vinf_venv/
 data/
 backup/
+pylucene_index/
 procesed_data/
 .DS_Store
 fulltext.txt

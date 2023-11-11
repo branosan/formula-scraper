@@ -1,6 +1,7 @@
 from . import *
+import lucene
 from .indexer import create_tfidf, lookup_document
-# from .pylucene_indexer import test_index
+from .pylucene_indexer import test_index, basic_search
 from .queries import find_pairs, find_most_wins, find_collegues
 from .xml_parser import extract_pages_xml_stream
 
@@ -106,7 +107,7 @@ def find(pattern):
 if __name__ == '__main__':
     # https://pitwall.app/seasons
     # https://www.wikiwand.com/en/Formula_One
-
+    lucene.initVM()
     os.makedirs('./data', exist_ok=True)
     while True:
         clear_screen()
@@ -153,6 +154,11 @@ if __name__ == '__main__':
             _ = input('Press ENTER to continue...')
         elif argv[0].lower() == 'p':
             test_index()
+            _ = input('Press ENTER to continue...')
+        elif argv[0].lower() == 's':
+            phrase = input('Enter search phrase: ')
+            basic_search(phrase)
+            _ = input('Press ENTER to continue...')
         elif argv[0].lower() == 'e':
             find_entities()
         elif argv[0].lower() == 'l':
@@ -176,7 +182,7 @@ if __name__ == '__main__':
             _ = input('Press ENTER to continue...')
         elif argv[0].lower() == 'x':
             extract_pages_xml_stream()
-            _ = input('Press enter to continue...')
+            _ = input('Press ENTER to continue...')
         elif argv[0].lower() == 'q':
             print('Quiting...')
             time.sleep(1)
