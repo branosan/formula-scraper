@@ -1,7 +1,7 @@
 from . import *
 import lucene
 from .indexer import create_tfidf, lookup_document
-from .pylucene_indexer import test_index, basic_search
+from .pylucene_indexer import test_index, basic_search, search_for_drivers
 from .queries import find_pairs, find_most_wins, find_collegues
 from .xml_parser import extract_pages_xml_stream
 
@@ -138,29 +138,64 @@ if __name__ == '__main__':
                 print('Invalid command', end='\r')
                 time.sleep(2)
                 continue
+
         elif argv[0].lower() == 't':
             print('Creating full text file...')
             get_text()
+
         elif argv[0].lower() == 'd':
             print('Creating documents...')
             create_documents()    
+
         elif argv[0].lower() == 'i':
             create_tfidf(dir='./data')
+
         elif argv[0].lower() == 'f':
             pattern = input('Enter a pattern: ')
             top_docs = lookup_document(pattern)
             # print top documents
             _ = [print(doc) for doc in top_docs]
             _ = input('Press ENTER to continue...')
+
         elif argv[0].lower() == 'p':
             test_index()
             _ = input('Press ENTER to continue...')
+
         elif argv[0].lower() == 's':
-            phrase = input('Enter search phrase: ')
-            basic_search(phrase)
+            choice = input('''
+    [1] Find when two pilots met in a grand prix
+    [2] Find pilots with most wins in a grand prix [TODO]
+    [3] Find if two drivers've driven for the same team [TODO]
+    [4] Basic search
+:''')
+            if choice == '1':
+                p1 = input('Enter name of the first pilot: ').lower()
+                p2 = input('Enter name of the second pilot: ').lower()
+                try:
+                    year = input('Enter year year: ')
+                except ValueError:
+                    print('Invalid command check if year is written correctly', end='\r')
+                    time.sleep(2)
+                    continue
+                search_for_drivers(p1, p2, year)
+                # TODO pass the paths to the a function which will extract year and GP name
+                # from the title and then search the csv for a specific  GP and positions 
+                # at which the drivers finished the race
+            elif choice == '2':
+                gp_name = input('Enter name of the grand prix: ')
+                print(find_most_wins(gp_name))
+            elif choice == '3':
+                p1 = input('Enter name of the first pilot: ')
+                p2 = input('Enter name of the second pilot: ')
+                print(find_collegues(p1, p2))
+            elif choice == '4':
+                phrase = input('Enter search phrase: ')
+                basic_search(phrase)
             _ = input('Press ENTER to continue...')
+
         elif argv[0].lower() == 'e':
             find_entities()
+
         elif argv[0].lower() == 'l':
             choice = input('''
 [1] Find when two pilots met in a grand prix
@@ -180,9 +215,11 @@ if __name__ == '__main__':
                 p2 = input('Enter name of the second pilot: ')
                 print(find_collegues(p1, p2))
             _ = input('Press ENTER to continue...')
+
         elif argv[0].lower() == 'x':
             extract_pages_xml_stream()
             _ = input('Press ENTER to continue...')
+
         elif argv[0].lower() == 'q':
             print('Quiting...')
             time.sleep(1)

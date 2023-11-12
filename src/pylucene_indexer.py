@@ -8,14 +8,16 @@ from java.nio.file import Paths
 from org.apache.lucene.analysis.standard import StandardAnalyzer
 from org.apache.lucene.document import Document, Field, TextField
 from org.apache.lucene.index import IndexWriter, IndexWriterConfig, DirectoryReader, Term
-from org.apache.lucene.search import IndexSearcher, Query, TermQuery
+from org.apache.lucene.search import IndexSearcher, Query, TermQuery, BooleanQuery, BooleanClause, FuzzyQuery, WildcardQuery
 from org.apache.lucene.store import NIOFSDirectory, FSDirectory
 
 INDEX_PATH = './pylucene_index'
 DOC_ID_KEY = 'id'
 
 def test_index(dir='data/wiki_dump/pages'):
+    print('-----------------------------------')
     print(f'Using lucene {lucene.VERSION}')
+    print('-----------------------------------')
     if not os.path.exists(INDEX_PATH):
         os.makedirs(INDEX_PATH)
 
@@ -55,15 +57,80 @@ def test_index(dir='data/wiki_dump/pages'):
 
 def basic_search(phrase):
     # lucene.initVM()
+    print('-----------------------------------')
     print(f'Using lucene {lucene.VERSION}')
+    print('-----------------------------------')
     reader = DirectoryReader.open(FSDirectory.open(Paths.get(INDEX_PATH)))
     searcher = IndexSearcher(reader)
 
-    query = TermQuery(Term("content", phrase))
+    # Split the phrase into two words
+    words = phrase.split()
+
+    # Create a BooleanQuery with both words as MUST clauses
+    boolean_query = BooleanQuery.Builder()
+    for word in words:
+        term_query = TermQuery(Term("content", word))
+        boolean_query.add(term_query, BooleanClause.Occur.MUST)
+
+    query = boolean_query.build()
 
     top_docs = searcher.search(query, 10)
 
     print(f'Search results for "{phrase}":')
+    for score_doc in top_docs.scoreDocs:
+        # retriev id which pylucene assigned to document
+        lucene_doc_id = score_doc.doc
+        doc = searcher.doc(lucene_doc_id)
+        # get my own file identificator
+        id_field = doc.get(DOC_ID_KEY)
+        print(f'Document ID: {id_field}')
+
+    reader.close()
+
+def search_for_drivers(d1, d2, year):
+    """
+    Builds a query which find if two drivers have met in specified year
+    Query: 
+        title: (year && .* && grand && prix)
+        &&
+        content: (driver1 && driver2)
+    """
+    # lucene.initVM()
+    print('-----------------------------------')
+    print(f'Using lucene {lucene.VERSION}')
+    print('-----------------------------------')
+    reader = DirectoryReader.open(FSDirectory.open(Paths.get(INDEX_PATH)))
+    searcher = IndexSearcher(reader)
+
+    title_pattern = f'{year} * Grand Prix'.lower().split()
+
+    boolean_query = BooleanQuery.Builder()
+
+    # Find grand prix from the time period
+    # handle year
+    title_sub_query = BooleanQuery.Builder()
+    year_term = TermQuery(Term('title', title_pattern[0]))
+    title_sub_query.add(year_term, BooleanClause.Occur.MUST)
+    # handle wildcard
+    wildcard_sub_quer = WildcardQuery(Term('title', f'{title_pattern[1]}'))
+    title_sub_query.add(wildcard_sub_quer, BooleanClause.Occur.MUST)
+    # handle "grand prix" term
+    for term in title_pattern[2:]:
+        title_term = TermQuery(Term('title', term))
+        title_sub_query.add(title_term, BooleanClause.Occur.MUST)
+
+    boolean_query.add(title_sub_query.build(), BooleanClause.Occur.MUST)
+
+    for driver_name in [d1, d2]:
+        # split names into multiple terms
+        for part_name in driver_name.split(' '):
+            fuzzy_query = FuzzyQuery(Term('content', part_name), 2)
+            boolean_query.add(fuzzy_query, BooleanClause.Occur.MUST)
+
+    query = boolean_query.build()
+    top_docs = searcher.search(query, 10)
+
+    print(f'GP from the time period {year}\nWhere {d1} and {d2} raced each other:')
     for score_doc in top_docs.scoreDocs:
         # retriev id which pylucene assigned to document
         lucene_doc_id = score_doc.doc
