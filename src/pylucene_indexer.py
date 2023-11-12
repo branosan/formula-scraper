@@ -130,13 +130,16 @@ def search_for_drivers(d1, d2, year):
     query = boolean_query.build()
     top_docs = searcher.search(query, 10)
 
-    print(f'GP from the time period {year}\nWhere {d1} and {d2} raced each other:')
-    for score_doc in top_docs.scoreDocs:
-        # retriev id which pylucene assigned to document
-        lucene_doc_id = score_doc.doc
-        doc = searcher.doc(lucene_doc_id)
-        # get my own file identificator
-        id_field = doc.get(DOC_ID_KEY)
-        print(f'Document ID: {id_field}')
+    # print(f'GP from the time period {year}\nWhere {d1} and {d2} raced each other:')
+    # for score_doc in top_docs.scoreDocs:
+    #     # retriev id which pylucene assigned to document
+    #     lucene_doc_id = score_doc.doc
+    #     doc = searcher.doc(lucene_doc_id)
+    #     # get my own file identificator
+    #     id_field = doc.get(DOC_ID_KEY)
+    #     print(f'Document ID: {id_field}')
 
+    # extract paths to json files from the top_docs
+    paths = [searcher.doc(score_doc.doc).get(DOC_ID_KEY) for score_doc in top_docs.scoreDocs]
     reader.close()
+    return paths

@@ -2,7 +2,7 @@ from . import *
 import lucene
 from .indexer import create_tfidf, lookup_document
 from .pylucene_indexer import test_index, basic_search, search_for_drivers
-from .queries import find_pairs, find_most_wins, find_collegues
+from .queries import find_wins, find_most_wins, find_collegues
 from .xml_parser import extract_pages_xml_stream
 
 # TODO:
@@ -177,10 +177,15 @@ if __name__ == '__main__':
                     print('Invalid command check if year is written correctly', end='\r')
                     time.sleep(2)
                     continue
-                search_for_drivers(p1, p2, year)
-                # TODO pass the paths to the a function which will extract year and GP name
-                # from the title and then search the csv for a specific  GP and positions 
-                # at which the drivers finished the race
+                files = search_for_drivers(p1, p2, year)
+                wins_dict = find_wins(p1, p2, files)
+                # print results
+                print(f'{p1.title()} and {p2.title()} met during:')
+                for key, value in wins_dict.items():
+                    print('-'*30)
+                    print(f'{key}')
+                    _ = [print(f'{k}: {v}') for k, v in value.items()]
+
             elif choice == '2':
                 gp_name = input('Enter name of the grand prix: ')
                 print(find_most_wins(gp_name))
@@ -195,26 +200,6 @@ if __name__ == '__main__':
 
         elif argv[0].lower() == 'e':
             find_entities()
-
-        elif argv[0].lower() == 'l':
-            choice = input('''
-[1] Find when two pilots met in a grand prix
-[2] Find pilots with most wins in a grand prix
-[3] Find if two drivers've driven for the same team
-''')
-            if choice == '1':
-                p1 = input('Enter name of the first pilot: ')
-                p2 = input('Enter name of the second pilot: ')
-                year = input('Enter year: ')
-                print(find_pairs(p1, p2, year))
-            elif choice == '2':
-                gp_name = input('Enter name of the grand prix: ')
-                print(find_most_wins(gp_name))
-            elif choice == '3':
-                p1 = input('Enter name of the first pilot: ')
-                p2 = input('Enter name of the second pilot: ')
-                print(find_collegues(p1, p2))
-            _ = input('Press ENTER to continue...')
 
         elif argv[0].lower() == 'x':
             extract_pages_xml_stream()

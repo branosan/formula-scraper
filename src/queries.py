@@ -1,5 +1,31 @@
 from . import *
 
+def find_wins(p1, p2, files):
+    df = pd.read_csv('data/procesed_data/df_entities.csv', sep=';')
+    # results = [f'{p1.title()} and {p2.title()} met during:']
+    results = {}
+    for file_path in files:
+        if re.search(r'(\d{4} .+ [Gg]rand [Pp]rix)', file_path) is None:
+            continue
+        with open(file_path, 'r', encoding='utf-8') as f:
+            json_data = json.load(f)
+            year = json_data['title'].split(' ')[0]
+            gp_name = '-'.join(json_data['title'].split(' ')[1:]).lower()
+
+            filtered_p1 = df[(df['DRIVER NAME'].str.contains(p1, case=False)) & (df['YEAR'] == int(year)) & (df['GP NAME']==gp_name)]
+            filtered_p2 = df[(df['DRIVER NAME'].str.contains(p2, case=False)) & (df['YEAR'] == int(year)) & (df['GP NAME']==gp_name)]
+            pairs = filtered_p1.merge(filtered_p2, on=['YEAR', 'GP NAME'])
+            
+            if pairs.shape[0] == 0:
+                continue
+            # check if both pilots finished the race
+            pos_x = 'DNF' if pairs['POS_x'][0] < 0 else pairs['POS_x'][0]
+            pos_y = 'DNF' if pairs['POS_y'][0] < 0 else pairs['POS_y'][0]
+            # add print statement to results
+            results[f'{year}-{gp_name}'] = {p1.title(): pos_x, p2.title(): pos_y}
+            # results.append(f'{year} {gp_name}\n{p1.title()} Finished: {pos_x}\n{p2.title()} Finished: {pos_y}')
+    return results
+
 # !!!!
 # Deprecated queries which wont be used in the final version
 # !!!!
