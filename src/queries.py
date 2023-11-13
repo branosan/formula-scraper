@@ -23,7 +23,28 @@ def find_wins(p1, p2, files):
             pos_y = 'DNF' if pairs['POS_y'][0] < 0 else pairs['POS_y'][0]
             # add print statement to results
             results[f'{year}-{gp_name}'] = {p1.title(): pos_x, p2.title(): pos_y}
-            # results.append(f'{year} {gp_name}\n{p1.title()} Finished: {pos_x}\n{p2.title()} Finished: {pos_y}')
+    return results
+
+def find_dnfs(files, year_range):
+    df = pd.read_csv('data/procesed_data/df_entities.csv', sep=';')
+    # remap string values to int
+    results = {}
+    for file_path in files:
+        if re.search(r'(\d{4} .+ [Gg]rand [Pp]rix)', file_path) is None:
+            continue
+        with open(file_path, 'r', encoding='utf-8') as f:
+            json_data = json.load(f)
+            year = int(json_data['title'].split(' ')[0])
+            gp_name = '-'.join(json_data['title'].split(' ')[1:]).lower()
+
+            filtered = df[
+                (df['YEAR'] == year) & 
+                (df['GP NAME'] == gp_name)
+            ]
+            filtered = filtered[filtered['POS'] < 0]
+            if filtered.shape[0] == 0:
+                continue
+            results[f'{year}-{gp_name}'] = filtered.shape[0]
     return results
 
 # !!!!

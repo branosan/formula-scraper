@@ -1,14 +1,15 @@
 from . import *
 import lucene
 from .indexer import create_tfidf, lookup_document
-from .pylucene_indexer import test_index, basic_search, search_for_drivers
-from .queries import find_wins, find_most_wins, find_collegues
+from .pylucene_indexer import test_index, basic_search, search_for_drivers, search_bad_weather
+from .queries import find_wins, find_most_wins, find_collegues, find_dnfs
 from .xml_parser import extract_pages_xml_stream
 
 # TODO:
 # Odtestovat ci funguje vyhladavanie v pylucene
 # Najprv najst veci cez queri teda nejake mena jazdcov a rok zadat a to najde kedy sa aky jazdci stretli
 #    nasledne z query vybrat regexom napr. meno velkej ceny a rok a najst v tom roku kto vyhral na velkej cene
+# 2) Najst velke ceny kde prsalo z intervalu rokov a spocitat kolko jazdcov DNF
 
 def clear_screen():
     if os.name == 'posix':  # Unix/Linux/MacOS
@@ -164,7 +165,7 @@ if __name__ == '__main__':
         elif argv[0].lower() == 's':
             choice = input('''
     [1] Find when two pilots met in a grand prix
-    [2] Find pilots with most wins in a grand prix [TODO]
+    [2] Find GPs with bad weather and count DNFs [WIP]
     [3] Find if two drivers've driven for the same team [TODO]
     [4] Basic search
 :''')
@@ -179,12 +180,24 @@ if __name__ == '__main__':
                     continue
                 files = search_for_drivers(p1, p2, year)
                 wins_dict = find_wins(p1, p2, files)
+                
                 # print results
-                print(f'{p1.title()} and {p2.title()} met during:')
+                print(f'\n{p1.title()} and {p2.title()} met during:')
                 for key, value in wins_dict.items():
                     print('-'*30)
                     print(f'{key}')
                     _ = [print(f'{k}: {v}') for k, v in value.items()]
+            elif choice == '2':
+                years = input('Enter year year range [<year1> <year2>]: ')
+                files = search_bad_weather(years)
+                dnfs_dict = find_dnfs(files, years)
+
+                # print results
+                years = years.split(' ')
+                print(f'\nBetween {years[0]}-{years[1]} it rained on:')
+                for key, value in dnfs_dict.items():
+                    print('-'*30)
+                    print(f'{key}: DNFs {value}')
 
             elif choice == '2':
                 gp_name = input('Enter name of the grand prix: ')

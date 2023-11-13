@@ -8,11 +8,22 @@ from java.nio.file import Paths
 from org.apache.lucene.analysis.standard import StandardAnalyzer
 from org.apache.lucene.document import Document, Field, TextField
 from org.apache.lucene.index import IndexWriter, IndexWriterConfig, DirectoryReader, Term
-from org.apache.lucene.search import IndexSearcher, Query, TermQuery, BooleanQuery, BooleanClause, FuzzyQuery, WildcardQuery
+from org.apache.lucene.search import IndexSearcher, Query, TermQuery, BooleanQuery, BooleanClause, FuzzyQuery, WildcardQuery, TermRangeQuery
 from org.apache.lucene.store import NIOFSDirectory, FSDirectory
 
 INDEX_PATH = './pylucene_index'
 DOC_ID_KEY = 'id'
+
+BAD_WEATHER_TERMS = [
+    'rain',
+    'torrential',
+    'weather',
+    'wet',
+    'storm',
+    'collision',
+    'rain-soaked',
+    'soaked'
+]
 
 def test_index(dir='data/wiki_dump/pages'):
     print('-----------------------------------')
@@ -87,9 +98,10 @@ def basic_search(phrase):
 
     reader.close()
 
-def search_for_drivers(d1, d2, year):
+def search_for_drivers(d1, d2, year, results_n=10):
     """
-    Builds a query which find if two drivers have met in specified year
+    Builds a query which find if two drivers have met in specified year.
+    
     Query: 
         title: (year && .* && grand && prix)
         &&
@@ -128,7 +140,7 @@ def search_for_drivers(d1, d2, year):
             boolean_query.add(fuzzy_query, BooleanClause.Occur.MUST)
 
     query = boolean_query.build()
-    top_docs = searcher.search(query, 10)
+    top_docs = searcher.search(query, results_n)
 
     # print(f'GP from the time period {year}\nWhere {d1} and {d2} raced each other:')
     # for score_doc in top_docs.scoreDocs:
@@ -140,6 +152,82 @@ def search_for_drivers(d1, d2, year):
     #     print(f'Document ID: {id_field}')
 
     # extract paths to json files from the top_docs
+    paths = [searcher.doc(score_doc.doc).get(DOC_ID_KEY) for score_doc in top_docs.scoreDocs]
+    reader.close()
+    return paths
+
+def search_bad_weather(year_range, results_n=10):
+    """
+    Builds a query which looks for a grand prix with bad weather.
+    This will be later connected with my crawled csv file from which the number of
+    drivers who DNF-ed will be extracted.
+    
+    Query:
+        title: ((year && .* && grand && prix) || (year && .* && grand && prix))
+        &&
+        content: (word1 || word2 || ... || wordN)
+    """
+    print('-----------------------------------')
+    print(f'Using lucene {lucene.VERSION}')
+    print('-----------------------------------')
+    
+    years = year_range.split(' ')
+
+    reader = DirectoryReader.open(FSDirectory.open(Paths.get(INDEX_PATH)))
+    searcher = IndexSearcher(reader)
+
+    boolean_query = BooleanQuery.Builder()
+    title_sub_query = BooleanQuery.Builder()
+
+    # Build query for title
+    # for year in range(int(years[0]), int(years[1])+1):
+    #     title_pattern = f'{year} * Grand Prix'.lower().split()
+    #     # handle year
+    #     sub_sub_query = BooleanQuery.Builder()
+    #     year_term = TermQuery(Term('title', title_pattern[0]))
+    #     sub_sub_query.add(year_term, BooleanClause.Occur.MUST)
+    #     # handle wildcard "*"
+    #     wildcard_sub_quer = WildcardQuery(Term('title', f'{title_pattern[1]}'))
+    #     sub_sub_query.add(wildcard_sub_quer, BooleanClause.Occur.MUST)
+    #     # handle "grand prix" term
+    #     for term in title_pattern[2:]:
+    #         title_term = TermQuery(Term('title', term))
+    #         sub_sub_query.add(title_term, BooleanClause.Occur.MUST)
+        
+    #     title_sub_query.add(sub_sub_query.build(), BooleanClause.Occur.SHOULD)
+    term_range_query = TermRangeQuery.newStringRange('numeric_field', years[0], years[1], True, True)
+    title_sub_query.add(term_range_query, BooleanClause.Occur.SHOULD)
+    title_pattern = f'* Grand Prix'.lower().split()
+    # handle wildcard "*"
+    wildcard_sub_quer = WildcardQuery(Term('title', f'{title_pattern[0]}'))
+    title_sub_query.add(wildcard_sub_quer, BooleanClause.Occur.MUST)
+    # handle "grand prix" term
+    for term in title_pattern[1:]:
+        title_term = TermQuery(Term('title', term))
+        title_sub_query.add(title_term, BooleanClause.Occur.MUST)
+    boolean_query.add(title_sub_query.build(), BooleanClause.Occur.MUST)
+
+    content_sub_query = BooleanQuery.Builder()
+    # Build query for page content
+    for term in BAD_WEATHER_TERMS:
+        # Use FuzzyQuery to find similar terms
+        fuzzy_query = FuzzyQuery(Term('content', term), 2)
+        content_sub_query.add(fuzzy_query, BooleanClause.Occur.SHOULD)
+    
+    boolean_query.add(content_sub_query.build(), BooleanClause.Occur.MUST)
+    
+    query = boolean_query.build()
+    top_docs = searcher.search(query, results_n)
+
+    # print(f'GP with bad weather in time period: [{years[0]}; {years[1]}]')
+    # for score_doc in top_docs.scoreDocs:
+    #     # retriev id which pylucene assigned to document
+    #     lucene_doc_id = score_doc.doc
+    #     doc = searcher.doc(lucene_doc_id)
+    #     # get my own file identificator
+    #     id_field = doc.get(DOC_ID_KEY)
+    #     print(f'Document ID: {id_field}')
+    
     paths = [searcher.doc(score_doc.doc).get(DOC_ID_KEY) for score_doc in top_docs.scoreDocs]
     reader.close()
     return paths
