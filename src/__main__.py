@@ -1,8 +1,8 @@
 from . import *
 import lucene
 from .indexer import create_tfidf, lookup_document
-from .pylucene_indexer import test_index, basic_search, search_for_drivers, search_bad_weather
-from .queries import find_wins, find_most_wins, find_collegues, find_dnfs
+from .pylucene_indexer import test_index, basic_search, search_for_drivers, search_bad_weather, find_controversies
+from .queries import find_wins, find_most_wins, find_collegues, find_dnfs, join_controversy_context
 from .xml_parser import extract_pages_xml_stream
 
 # TODO:
@@ -10,6 +10,7 @@ from .xml_parser import extract_pages_xml_stream
 # Najprv najst veci cez queri teda nejake mena jazdcov a rok zadat a to najde kedy sa aky jazdci stretli
 #    nasledne z query vybrat regexom napr. meno velkej ceny a rok a najst v tom roku kto vyhral na velkej cene
 # 2) Najst velke ceny kde prsalo z intervalu rokov a spocitat kolko jazdcov DNF
+# 3) Najst zavody s kontroverziou a najst vsetkych jazdcov ktory sa zucastnili spolu s ich poziciou na finishi
 
 def clear_screen():
     if os.name == 'posix':  # Unix/Linux/MacOS
@@ -165,8 +166,8 @@ if __name__ == '__main__':
         elif argv[0].lower() == 's':
             choice = input('''
     [1] Find when two pilots met in a grand prix
-    [2] Find GPs with bad weather and count DNFs [WIP]
-    [3] Find if two drivers've driven for the same team [TODO]
+    [2] Find GPs with bad weather and count DNFs
+    [3] Find the most controversial GPs and pilots [WIP]
     [4] Basic search
 :''')
             if choice == '1':
@@ -190,14 +191,28 @@ if __name__ == '__main__':
             elif choice == '2':
                 years = input('Enter year year range [<year1> <year2>]: ')
                 files = search_bad_weather(years)
-                dnfs_dict = find_dnfs(files, years)
-
+                dnfs_dict = find_dnfs(files)
                 # print results
                 years = years.split(' ')
                 print(f'\nBetween {years[0]}-{years[1]} it rained on:')
                 for key, value in dnfs_dict.items():
                     print('-'*30)
                     print(f'{key}: DNFs {value}')
+            
+            elif choice == '3':
+                years = input('Enter year year range [<year1> <year2>]: ')
+                files = find_controversies(years)
+                result_dict = join_controversy_context(files)
+                # print results
+                years = years.split(' ')
+                for gp, value in result_dict.items():
+                    print('='*10 + f'{gp}' + '='*10)
+                    print(f'Controversy: {value["context"]}')
+                    if value.get('drivers') is None:
+                        print('No drivers found in records...')
+                        continue
+                    _ = [print(f'{k}: {v}') for k, v in value['drivers'].items()]
+
 
             elif choice == '2':
                 gp_name = input('Enter name of the grand prix: ')
