@@ -48,7 +48,6 @@ def extract_pages_xml_stream():
         df = pd.read_csv('data/procesed_data/df_entities.csv', sep=';')
         filtered = df[(df['YEAR'] == page['year']) & (df['GP NAME'] == page['gp_name'])]
         filtered = filtered.iloc[:, 2::]
-        filtered.set_index('DRIVER NAME', inplace=True)
         wiki_merge = {**page, 'results': filtered.to_dict()}
         
         try:

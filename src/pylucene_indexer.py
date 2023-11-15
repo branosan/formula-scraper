@@ -66,7 +66,7 @@ def test_index(dir='data/merged'):
             document = Document()
             document.add(Field(DOC_ID_KEY, file_path, TextField.TYPE_STORED))
             # add names to the index
-            for name, _ in json_data['results']['POS'].items():
+            for _, name in json_data['results']['DRIVER NAME'].items():
                 # get rid of leading driver number in the name
                 name = ' '.join(name.split()[1:])
                 document.add(StringField('driver', name, Field.Store.YES))
