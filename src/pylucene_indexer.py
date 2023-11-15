@@ -6,7 +6,7 @@ import lucene
 from java.io import StringReader
 from java.nio.file import Paths
 from org.apache.lucene.analysis.standard import StandardAnalyzer
-from org.apache.lucene.document import Document, Field, TextField
+from org.apache.lucene.document import Document, Field, TextField, StringField, IntPoint
 from org.apache.lucene.index import IndexWriter, IndexWriterConfig, DirectoryReader, Term
 from org.apache.lucene.search import IndexSearcher, Query, TermQuery, BooleanQuery, BooleanClause, FuzzyQuery, WildcardQuery, TermRangeQuery
 from org.apache.lucene.store import NIOFSDirectory, FSDirectory
@@ -31,7 +31,7 @@ CONTROVERSY_TERMS = [
     'outrage',
 ]
 
-def test_index(dir='data/wiki_dump/pages'):
+def test_index(dir='data/merged'):
     print('-----------------------------------')
     print(f'Using lucene {lucene.VERSION}')
     print('-----------------------------------')
@@ -65,11 +65,21 @@ def test_index(dir='data/wiki_dump/pages'):
     
             document = Document()
             document.add(Field(DOC_ID_KEY, file_path, TextField.TYPE_STORED))
+            # add names to the index
+            for name, _ in json_data['results']['POS'].items():
+                # get rid of leading driver number in the name
+                name = ' '.join(name.split()[1:])
+                document.add(StringField('driver', name, Field.Store.YES))
+            document.add(Field('year', json_data['year'], TextField.TYPE_NOT_STORED))
             document.add(Field('title', json_data['title'], TextField.TYPE_NOT_STORED))
-            document.add(Field('content', json_data['text'], TextField.TYPE_STORED))
+            document.add(Field('content', json_data['text'], TextField.TYPE_NOT_STORED))
             writer.addDocument(document)
+            # commit every 200 documents
+            writer.commit() if n % 200 == 0 else None
 
+    writer.commit()
     writer.close()
+    index_directory.close()
     print('Finished creating index')
 
 def basic_search(phrase):
@@ -113,7 +123,6 @@ def search_for_drivers(d1, d2, year, results_n=10):
         &&
         content: (driver1 && driver2)
     """
-    # lucene.initVM()
     print('-----------------------------------')
     print(f'Using lucene {lucene.VERSION}')
     print('-----------------------------------')
@@ -126,30 +135,19 @@ def search_for_drivers(d1, d2, year, results_n=10):
 
     # Find grand prix from the time period
     # handle year
-    title_sub_query = BooleanQuery.Builder()
-    year_term = TermQuery(Term('title', title_pattern[0]))
-    title_sub_query.add(year_term, BooleanClause.Occur.MUST)
-    # handle wildcard
-    wildcard_sub_quer = WildcardQuery(Term('title', f'{title_pattern[1]}'))
-    title_sub_query.add(wildcard_sub_quer, BooleanClause.Occur.MUST)
-    # handle "grand prix" term
-    for term in title_pattern[2:]:
-        title_term = TermQuery(Term('title', term))
-        title_sub_query.add(title_term, BooleanClause.Occur.MUST)
-
-    boolean_query.add(title_sub_query.build(), BooleanClause.Occur.MUST)
+    year_query = TermRangeQuery.newStringRange('year', year, year, True, True)
+    boolean_query.add(year_query, BooleanClause.Occur.MUST)
 
     for driver_name in [d1, d2]:
-        # split names into multiple terms
-        for part_name in driver_name.split(' '):
-            fuzzy_query = FuzzyQuery(Term('content', part_name), 2)
-            boolean_query.add(fuzzy_query, BooleanClause.Occur.MUST)
+        query = FuzzyQuery(Term('driver', driver_name), 2)
+        boolean_query.add(query, BooleanClause.Occur.MUST)
 
     query = boolean_query.build()
     top_docs = searcher.search(query, results_n)
 
     # extract paths to json files from the top_docs
     paths = [searcher.doc(score_doc.doc).get(DOC_ID_KEY) for score_doc in top_docs.scoreDocs]
+    print(paths)
     reader.close()
     return paths
 
