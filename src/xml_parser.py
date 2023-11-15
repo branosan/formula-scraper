@@ -38,12 +38,21 @@ def extract_pages_xml_stream():
     This can then be used to create an index for each page.
     """
     for page in parse_dump_stream():
-        if page['title'] is None:
+        if (page['title'] is None) or (re.search(GP_PATTERN_WIKI, page['title']) is None):
             continue
         # curate the title to remove first Wikipedia: word and replace all / with -
         page['title'] = page['title'].replace('/', '-')
+        page['year'] = int(page['title'].split()[0])
+        page['gp_name'] = '-'.join(page['title'].split(' ')[1:]).lower()
+        # combine with the csv from previous crawl
+        df = pd.read_csv('data/procesed_data/df_entities.csv', sep=';')
+        filtered = df[(df['YEAR'] == page['year']) & (df['GP NAME'] == page['gp_name'])]
+        filtered = filtered.iloc[:, 2::]
+        filtered.set_index('DRIVER NAME', inplace=True)
+        wiki_merge = {**page, 'results': filtered.to_dict()}
+        
         try:
-            with open(f'data/wiki_dump/pages/{page["title"]}.json', 'w') as f:
-                json.dump(page, f)
+            with open(f'data/merged/{page["title"]}.json', 'w') as f:
+                json.dump(wiki_merge, f)
         except OSError:
             pass

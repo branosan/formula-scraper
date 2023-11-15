@@ -22,3 +22,4 @@ from .Crawler import Crawler
 
 HEADERS = 'YEAR;GP NAME;POS;DRIVER NAME;TEAM NAME;LAP TIME;GRID;LAPS;POINTS'
 GP_PATTERN = r'\/[0-9]+-[a-z,-]+-grand-prix$'
+GP_PATTERN_WIKI = r'(\d{4} .+ [Gg]rand [Pp]rix)'
