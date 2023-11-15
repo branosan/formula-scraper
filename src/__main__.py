@@ -1,5 +1,16 @@
 from . import *
+import lucene
 from .indexer import create_tfidf, lookup_document
+from .pylucene_indexer import test_index, basic_search, search_for_drivers, search_bad_weather, find_controversies
+from .queries import find_wins, find_most_wins, find_collegues, find_dnfs, join_controversy_context
+from .xml_parser import extract_pages_xml_stream
+
+# TODO:
+# Odtestovat ci funguje vyhladavanie v pylucene
+# Najprv najst veci cez queri teda nejake mena jazdcov a rok zadat a to najde kedy sa aky jazdci stretli
+#    nasledne z query vybrat regexom napr. meno velkej ceny a rok a najst v tom roku kto vyhral na velkej cene
+# 2) Najst velke ceny kde prsalo z intervalu rokov a spocitat kolko jazdcov DNF
+# 3) Najst zavody s kontroverziou a najst vsetkych jazdcov ktory sa zucastnili spolu s ich poziciou na finishi
 
 def clear_screen():
     if os.name == 'posix':  # Unix/Linux/MacOS
@@ -98,19 +109,23 @@ def find(pattern):
 if __name__ == '__main__':
     # https://pitwall.app/seasons
     # https://www.wikiwand.com/en/Formula_One
-
+    lucene.initVM()
     os.makedirs('./data', exist_ok=True)
     while True:
         clear_screen()
         argv = input('''
-===============Menu===============
+=========================Menu===========================
 [c] Launch crawler "c <max_depth> <url>"
 [s] Full text search "s <string>"
-[t] Create full text file  
 [d] Create documents for each hmtl file
+[f] Look for a pattern in the full text file 
+[l] Entity lookup
+--------------------Called only once--------------------
 [i] Create index
-[f] Look for a pattern in the full text file                     
-[e] Find entities                      
+[p] Create PyLucene index
+[t] Create full text file                 
+[e] Find entities
+[x] Extract pages from xml dump                    
 [q] Quit
 ''')
         argv = argv.split(' ')
@@ -125,22 +140,99 @@ if __name__ == '__main__':
                 print('Invalid command', end='\r')
                 time.sleep(2)
                 continue
+
         elif argv[0].lower() == 't':
             print('Creating full text file...')
             get_text()
+
         elif argv[0].lower() == 'd':
             print('Creating documents...')
             create_documents()    
+
         elif argv[0].lower() == 'i':
             create_tfidf(dir='./data')
+
         elif argv[0].lower() == 'f':
             pattern = input('Enter a pattern: ')
             top_docs = lookup_document(pattern)
             # print top documents
             _ = [print(doc) for doc in top_docs]
             _ = input('Press ENTER to continue...')
+
+        elif argv[0].lower() == 'p':
+            test_index()
+            _ = input('Press ENTER to continue...')
+
+        elif argv[0].lower() == 's':
+            choice = input('''
+    [1] Find when two pilots met in a grand prix
+    [2] Find GPs with bad weather and count DNFs
+    [3] Find the most controversial GPs and pilots [WIP]
+    [4] Basic search
+:''')
+            if choice == '1':
+                p1 = input('Enter name of the first pilot: ').lower()
+                p2 = input('Enter name of the second pilot: ').lower()
+                try:
+                    year = input('Enter year year: ')
+                except ValueError:
+                    print('Invalid command check if year is written correctly', end='\r')
+                    time.sleep(2)
+                    continue
+                files = search_for_drivers(p1, p2, year)
+                wins_dict = find_wins(p1, p2, files)
+                
+                # print results
+                print(f'\n{p1.title()} and {p2.title()} met during:')
+                for key, value in wins_dict.items():
+                    print('-'*30)
+                    print(f'{key}')
+                    _ = [print(f'{k}: {v}') for k, v in value.items()]
+            elif choice == '2':
+                years = input('Enter year year range [<year1> <year2>]: ')
+                files = search_bad_weather(years)
+                dnfs_dict = find_dnfs(files)
+                # print results
+                years = years.split(' ')
+                print(f'\nBetween {years[0]}-{years[1]} it rained on:')
+                for key, value in dnfs_dict.items():
+                    print('-'*30)
+                    print(f'{key}: DNFs {value}')
+            
+            elif choice == '3':
+                years = input('Enter year year range [<year1> <year2>]: ')
+                files = find_controversies(years)
+                result_dict = join_controversy_context(files)
+                # print results
+                years = years.split(' ')
+                for gp, value in result_dict.items():
+                    print('='*10 + f'{gp}' + '='*10)
+                    print(f'Controversy: {value["context"]}')
+                    if value.get('drivers') is None:
+                        print('No drivers found in records...')
+                        continue
+                    _ = [print(f'{k}: {v}') for k, v in value['drivers'].items()]
+
+
+            elif choice == '2':
+                gp_name = input('Enter name of the grand prix: ')
+                print(find_most_wins(gp_name))
+            elif choice == '3':
+                p1 = input('Enter name of the first pilot: ')
+                p2 = input('Enter name of the second pilot: ')
+                print(find_collegues(p1, p2))
+            elif choice == '4':
+                phrase = input('Enter search phrase: ')
+                basic_search(phrase)
+            _ = input('Press ENTER to continue...')
+
         elif argv[0].lower() == 'e':
             find_entities()
+
+        elif argv[0].lower() == 'x':
+            extract_pages_xml_stream()
+            _ = input('Press ENTER to continue...')
+
         elif argv[0].lower() == 'q':
             print('Quiting...')
             time.sleep(1)
@@ -148,18 +240,3 @@ if __name__ == '__main__':
         else:
             print('Invalid command', end='\r')
             time.sleep(2)
-
-# TODO plan
-#   Each website will be used to list all links which will be added to a queue.
-#   We will iterate through the queue to visit all websites
-#   make a table with words their frequency and code of ducment in which the words is located
-#   implement potrer - reduce all words to their stems == easier look up
-
-# TODO 
-# natahat html zo vsetkych stranok nemenit ich
-# vytvorit index z html
-# otazky:
-# - 
-# vybrat entity ktore nas zaujimaju napriklad jazdci a okruhy na ktorych vyhrali
-# pouzit paralelizovane vypocty na skratenie casu
-# pre kazdy crawlnuty dokument si chceme vytvorit vector v priestore
