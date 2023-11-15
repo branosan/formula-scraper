@@ -22,32 +22,29 @@ def find_wins(p1, p2, files):
             results[f'{year}-{gp_name}'] = {p1.title(): pos_x, p2.title(): pos_y}
     return results
 
-def find_dnfs(files):
+def find_dnfs(files, min_dnfs):
     """
     Finds all GPs in which it rained and counts DNFs.
     
     Returns:
         results: {<year>-<gp_name>: <number of DNFs>}
     """
-    df = pd.read_csv('data/procesed_data/df_entities.csv', sep=';')
     # remap string values to int
     results = {}
     for file_path in files:
-        if re.search(r'(\d{4} .+ [Gg]rand [Pp]rix)', file_path) is None:
-            continue
         with open(file_path, 'r', encoding='utf-8') as f:
             json_data = json.load(f)
             year = int(json_data['title'].split(' ')[0])
             gp_name = '-'.join(json_data['title'].split(' ')[1:]).lower()
+            df = pd.DataFrame(json_data['results'])
 
-            filtered = df[
-                (df['YEAR'] == year) & 
-                (df['GP NAME'] == gp_name)
-            ]
-            filtered = filtered[filtered['POS'] < 0]
-            if filtered.shape[0] == 0:
+            dnf_df = df[df['POS'] < 0]
+            if dnf_df.shape[0] == 0:
                 continue
-            results[f'{year}-{gp_name}'] = filtered.shape[0]
+            
+            dnfs = dnf_df.shape[0]
+            if dnfs >= min_dnfs:
+                results[f'{year}-{gp_name}'] = dnf_df.shape[0]
     return results
 
 def join_controversy_context(files):
@@ -64,31 +61,29 @@ def join_controversy_context(files):
                     }
                 }
     """
-    df = pd.read_csv('data/procesed_data/df_entities.csv', sep=';')
 
     results = {}
     for file_path in files:
 
-        if re.search(r'(\d{4} .+ [Gg]rand [Pp]rix)', file_path) is None:
-            continue
         with open(file_path, 'r', encoding='utf-8') as f:
             json_data = json.load(f)
             year = int(json_data['title'].split(' ')[0])
             gp_name = '-'.join(json_data['title'].split(' ')[1:]).lower()
-
-            filtered = df[(df['YEAR'] == year) & (df['GP NAME'] == gp_name)]
+            df = pd.DataFrame(json_data['results'])
 
             # extract context of the controversy
             context = re.search(r'(.{10} [Cc]ontroversy .{10})', json_data['text'])
-            if not context is None:
+            if context is not None:
                 # if there is controversy in this GP add it to results
                 results[f'{year}-{gp_name}'] = {}
-                results[f'{year}-{gp_name}']['context'] = f'... {context.group()} ...'
+                results[f'{year}-{gp_name}']['context'] = f'... {context.group(1)} ...'
+            else:
+                continue
             # extract top 3 drivers
-            results[f'{year}-{gp_name}'] = {}
-            if filtered.shape[0] > 0:
+            # results[f'{year}-{gp_name}'] = {}
+            if df.shape[0] > 0:
                 results[f'{year}-{gp_name}']['drivers'] = {}
-            for index, row in filtered.head(3).iterrows():
+            for _, row in df.head(3).iterrows():
                 results[f'{year}-{gp_name}']['drivers'][row['DRIVER NAME']] = row['POS']
     return results
 

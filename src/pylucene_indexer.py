@@ -17,7 +17,7 @@ DOC_ID_KEY = 'id'
 BAD_WEATHER_TERMS = [
     'rain',
     'torrential',
-    'weather',
+    'cloudy',
     'wet',
     'storm',
     'collision',
@@ -71,6 +71,7 @@ def test_index(dir='data/merged'):
                 name = ' '.join(name.split()[1:])
                 document.add(StringField('driver', name, Field.Store.YES))
             document.add(Field('year', json_data['year'], TextField.TYPE_NOT_STORED))
+            document.add(StringField('weather', json_data['weather'], Field.Store.YES))
             document.add(Field('title', json_data['title'], TextField.TYPE_NOT_STORED))
             document.add(Field('content', json_data['text'], TextField.TYPE_NOT_STORED))
             writer.addDocument(document)
@@ -129,8 +130,6 @@ def search_for_drivers(d1, d2, year, results_n=10):
     reader = DirectoryReader.open(FSDirectory.open(Paths.get(INDEX_PATH)))
     searcher = IndexSearcher(reader)
 
-    title_pattern = f'{year} * Grand Prix'.lower().split()
-
     boolean_query = BooleanQuery.Builder()
 
     # Find grand prix from the time period
@@ -151,7 +150,7 @@ def search_for_drivers(d1, d2, year, results_n=10):
     reader.close()
     return paths
 
-def search_bad_weather(year_range, results_n=10):
+def search_bad_weather(weather, year_range, results_n=10):
     """
     Builds a query which looks for a grand prix with bad weather.
     This will be later connected with my crawled csv file from which the number of
@@ -172,26 +171,14 @@ def search_bad_weather(year_range, results_n=10):
     searcher = IndexSearcher(reader)
 
     boolean_query = BooleanQuery.Builder()
-    title_sub_query = BooleanQuery.Builder()
     # Find grand prix from the time period
-    term_range_query = TermRangeQuery.newStringRange('numeric_field', years[0], years[1], True, True)
-    title_sub_query.add(term_range_query, BooleanClause.Occur.SHOULD)
-    title_pattern = f'* Grand Prix'.lower().split()
-    # handle wildcard "*"
-    wildcard_sub_quer = WildcardQuery(Term('title', f'{title_pattern[0]}'))
-    title_sub_query.add(wildcard_sub_quer, BooleanClause.Occur.MUST)
-    # handle "grand prix" term
-    for term in title_pattern[1:]:
-        title_term = TermQuery(Term('title', term))
-        title_sub_query.add(title_term, BooleanClause.Occur.MUST)
-    boolean_query.add(title_sub_query.build(), BooleanClause.Occur.MUST)
+    year_query = TermRangeQuery.newStringRange('year', years[0], years[1], True, True)
+    boolean_query.add(year_query, BooleanClause.Occur.MUST)
 
     content_sub_query = BooleanQuery.Builder()
     # Build query for page content
-    for term in BAD_WEATHER_TERMS:
-        # Use FuzzyQuery to find similar terms
-        fuzzy_query = FuzzyQuery(Term('content', term), 2)
-        content_sub_query.add(fuzzy_query, BooleanClause.Occur.SHOULD)
+    fuzzy_query = FuzzyQuery(Term('weather', weather), 2)
+    content_sub_query.add(fuzzy_query, BooleanClause.Occur.MUST)
     
     boolean_query.add(content_sub_query.build(), BooleanClause.Occur.MUST)
     

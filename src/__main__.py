@@ -190,14 +190,16 @@ if __name__ == '__main__':
                     _ = [print(f'{k}: {v}') for k, v in value.items()]
             elif choice == '2':
                 years = input('Enter year year range [<year1> <year2>]: ')
-                files = search_bad_weather(years)
-                dnfs_dict = find_dnfs(files)
+                weather = input('Enter weather condition: ')
+                min_dnfs = int(input('Enter minimum number of DNFs: '))
+                files = search_bad_weather(weather, years)
+                dnfs_dict = find_dnfs(files, min_dnfs)
                 # print results
                 years = years.split(' ')
-                print(f'\nBetween {years[0]}-{years[1]} it rained on:')
+                print(f'\nBetween {years[0]}-{years[1]} it was {weather} on:')
                 for key, value in dnfs_dict.items():
-                    print('-'*30)
-                    print(f'{key}: DNFs {value}')
+                    print('='*10 + f'{key}' + '='*10)
+                    print(f'DNFs = {value}')
             
             elif choice == '3':
                 years = input('Enter year year range [<year1> <year2>]: ')

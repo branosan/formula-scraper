@@ -44,6 +44,9 @@ def extract_pages_xml_stream():
         page['title'] = page['title'].replace('/', '-')
         page['year'] = int(page['title'].split()[0])
         page['gp_name'] = '-'.join(page['title'].split(' ')[1:]).lower()
+        
+        weather = re.search(r'[Ww]eather\s*=\s*([^\n|]+)', page['text'])
+        page['weather'] = weather.group(1) if weather is not None else 'NA'
         # combine with the csv from previous crawl
         df = pd.read_csv('data/procesed_data/df_entities.csv', sep=';')
         filtered = df[(df['YEAR'] == page['year']) & (df['GP NAME'] == page['gp_name'])]
