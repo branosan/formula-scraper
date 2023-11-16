@@ -6,10 +6,11 @@ import lucene
 from java.io import StringReader
 from java.nio.file import Paths
 from org.apache.lucene.analysis.standard import StandardAnalyzer
-from org.apache.lucene.document import Document, Field, TextField, StringField, IntPoint
-from org.apache.lucene.index import IndexWriter, IndexWriterConfig, DirectoryReader, Term
+from org.apache.lucene.document import Document, Field, TextField, StringField, FieldType
+from org.apache.lucene.index import IndexWriter, IndexWriterConfig, DirectoryReader, Term, IndexOptions
 from org.apache.lucene.search import IndexSearcher, Query, TermQuery, BooleanQuery, BooleanClause, FuzzyQuery, WildcardQuery, TermRangeQuery
 from org.apache.lucene.store import NIOFSDirectory, FSDirectory
+from org.apache.lucene.queryparser.classic import QueryParser
 
 INDEX_PATH = './pylucene_index'
 DOC_ID_KEY = 'id'
@@ -31,7 +32,7 @@ CONTROVERSY_TERMS = [
     'outrage',
 ]
 
-def test_index(dir='data/merged'):
+def create_index(dir='data/merged'):
     print('-----------------------------------')
     print(f'Using lucene {lucene.VERSION}')
     print('-----------------------------------')
@@ -53,6 +54,12 @@ def test_index(dir='data/merged'):
     # Specify the directory where you want to create the index
     index_directory = NIOFSDirectory(Paths.get(INDEX_PATH))
 
+    # tokenized weather query
+    string_field_tokenized = FieldType()
+    string_field_tokenized.setStored(False)
+    string_field_tokenized.setTokenized(True)
+    string_field_tokenized.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS)
+
     writer = IndexWriter(index_directory, config)
 
     for n, filename in enumerate(files):
@@ -71,7 +78,7 @@ def test_index(dir='data/merged'):
                 name = ' '.join(name.split()[1:])
                 document.add(StringField('driver', name, Field.Store.YES))
             document.add(Field('year', json_data['year'], TextField.TYPE_NOT_STORED))
-            document.add(StringField('weather', json_data['weather'], Field.Store.YES))
+            document.add(Field('weather', json_data['weather'], string_field_tokenized))
             document.add(Field('title', json_data['title'], TextField.TYPE_NOT_STORED))
             document.add(Field('content', json_data['text'], TextField.TYPE_NOT_STORED))
             writer.addDocument(document)
@@ -175,13 +182,13 @@ def search_bad_weather(weather, year_range, results_n=10):
     year_query = TermRangeQuery.newStringRange('year', years[0], years[1], True, True)
     boolean_query.add(year_query, BooleanClause.Occur.MUST)
 
-    content_sub_query = BooleanQuery.Builder()
+    weather_sub_query = BooleanQuery.Builder()
     # Build query for page content
-    fuzzy_query = FuzzyQuery(Term('weather', weather), 2)
-    content_sub_query.add(fuzzy_query, BooleanClause.Occur.MUST)
+    for token in weather.split():
+        fuzzy_query = FuzzyQuery(Term('weather', token), 2)
+        weather_sub_query.add(fuzzy_query, BooleanClause.Occur.SHOULD)
     
-    boolean_query.add(content_sub_query.build(), BooleanClause.Occur.MUST)
-    
+    boolean_query.add(weather_sub_query.build(), BooleanClause.Occur.MUST)
     query = boolean_query.build()
     top_docs = searcher.search(query, results_n)
     

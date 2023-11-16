@@ -1,7 +1,7 @@
 from . import *
 import lucene
 from .indexer import create_tfidf, lookup_document
-from .pylucene_indexer import test_index, basic_search, search_for_drivers, search_bad_weather, find_controversies
+from .pylucene_indexer import create_index, basic_search, search_for_drivers, search_bad_weather, find_controversies
 from .queries import find_wins, find_most_wins, find_collegues, find_dnfs, join_controversy_context
 from .xml_parser import extract_pages_xml_stream
 
@@ -160,7 +160,7 @@ if __name__ == '__main__':
             _ = input('Press ENTER to continue...')
 
         elif argv[0].lower() == 'p':
-            test_index()
+            create_index()
             _ = input('Press ENTER to continue...')
 
         elif argv[0].lower() == 's':
