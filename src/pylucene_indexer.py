@@ -32,16 +32,19 @@ CONTROVERSY_TERMS = [
     'outrage',
 ]
 
-def create_index(dir='data/merged'):
+def create_index(dir='./data/results'):
     print('-----------------------------------')
     print(f'Using lucene {lucene.VERSION}')
     print('-----------------------------------')
     if not os.path.exists(INDEX_PATH):
         os.makedirs(INDEX_PATH)
 
-    # load files to index
-    files = os.listdir(dir)
-    files_size = len(files)
+    # # load files to index
+    # files = os.listdir(dir)
+    # files_size = len(files)
+
+    file_structure = list(os.walk(dir, topdown=True))
+    structure_size = len(file_structure)
 
     # lucene.initVM()
 
@@ -62,28 +65,30 @@ def create_index(dir='data/merged'):
 
     writer = IndexWriter(index_directory, config)
 
-    for n, filename in enumerate(files):
-        print(f'{n}/{files_size}', end='\r')
-        if filename.endswith('.json'):
-            file_path = os.path.join(dir, filename)
-            # load all files in the data directory
-            with open(file_path, 'r', encoding='utf-8') as f:
-                json_data = json.load(f)
-    
-            document = Document()
-            document.add(Field(DOC_ID_KEY, file_path, TextField.TYPE_STORED))
-            # add names to the index
-            for _, name in json_data['results']['DRIVER NAME'].items():
-                # get rid of leading driver number in the name
-                name = ' '.join(name.split()[1:])
-                document.add(StringField('driver', name, Field.Store.YES))
-            document.add(Field('year', json_data['year'], TextField.TYPE_NOT_STORED))
-            document.add(Field('weather', json_data['weather'], string_field_tokenized))
-            document.add(Field('title', json_data['title'], TextField.TYPE_NOT_STORED))
-            document.add(Field('content', json_data['text'], TextField.TYPE_NOT_STORED))
-            writer.addDocument(document)
-            # commit every 200 documents
-            writer.commit() if n % 200 == 0 else None
+    for n, (path, dirs, files) in enumerate(file_structure):
+        print(f'{n}/{structure_size}', end='\r')
+        for filename in files:
+            if filename.endswith('.json'):
+                file_path = os.path.join(path, filename)
+                # load all files in the data directory
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    json_data = json.load(f)
+        
+                document = Document()
+                document.add(Field(DOC_ID_KEY, file_path, TextField.TYPE_STORED))
+                # add names to the index
+                for d in json_data['results']:
+                    name = d['DRIVER NAME']
+                    # get rid of leading driver number in the name
+                    name = ' '.join(name.split()[1:])
+                    document.add(StringField('driver', name, Field.Store.YES))
+                document.add(Field('year', json_data['YEAR'], TextField.TYPE_NOT_STORED))
+                document.add(Field('weather', json_data['WEATHER'], string_field_tokenized))
+                document.add(Field('title', json_data['title'], TextField.TYPE_NOT_STORED))
+                document.add(Field('content', json_data['text'], TextField.TYPE_NOT_STORED))
+                writer.addDocument(document)
+                # commit every 200 documents
+                writer.commit() if n % 200 == 0 else None
 
     writer.commit()
     writer.close()

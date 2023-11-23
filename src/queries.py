@@ -10,6 +10,7 @@ def find_wins(p1, p2, files):
             gp_name = '-'.join(json_data['title'].split(' ')[1:]).lower()
             
             df = pd.DataFrame(json_data['results'])
+            df['POS'] = df['POS'].astype(int)
             filtered_p1 = df[(df['DRIVER NAME'].str.contains(p1, case=False))]
             filtered_p2 = df[(df['DRIVER NAME'].str.contains(p2, case=False))]
             if filtered_p1.shape[0] == 0 or filtered_p2.shape[0] == 0:
@@ -37,6 +38,7 @@ def find_dnfs(files, min_dnfs):
             year = int(json_data['title'].split(' ')[0])
             gp_name = '-'.join(json_data['title'].split(' ')[1:]).lower()
             df = pd.DataFrame(json_data['results'])
+            df['POS'] = df['POS'].astype(int)
 
             dnf_df = df[df['POS'] < 0]
             if dnf_df.shape[0] == 0:
