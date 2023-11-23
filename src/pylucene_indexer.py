@@ -36,8 +36,7 @@ def create_index(dir='./data/results'):
     print('-----------------------------------')
     print(f'Using lucene {lucene.VERSION}')
     print('-----------------------------------')
-    if not os.path.exists(INDEX_PATH):
-        os.makedirs(INDEX_PATH)
+    os.makedirs(INDEX_PATH, exist_ok=True)
 
     # # load files to index
     # files = os.listdir(dir)

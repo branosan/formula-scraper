@@ -1,5 +1,11 @@
 from . import *
 
+# DEPRECATED
+# Functions in this file are not used anymore
+# since we switched to parsing data using PySpark
+# 
+# I left it in the repo so that you can see my own approach before implementing PySpark
+
 WIKI_DUMP_PATH = 'data/wiki_dump'
 
 def parse_dump_stream():
