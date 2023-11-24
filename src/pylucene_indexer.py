@@ -69,9 +69,14 @@ def create_index(dir='./data/results'):
         for filename in files:
             if filename.endswith('.json'):
                 file_path = os.path.join(path, filename)
+                try:
                 # load all files in the data directory
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    json_data = json.load(f)
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        json_data = json.load(f)
+                except json.JSONDecodeError:
+                    # wrong json format
+                    # invalid data skip
+                    continue
         
                 document = Document()
                 document.add(Field(DOC_ID_KEY, file_path, TextField.TYPE_STORED))
@@ -95,10 +100,6 @@ def create_index(dir='./data/results'):
     print('Finished creating index')
 
 def basic_search(phrase):
-    # lucene.initVM()
-    print('-----------------------------------')
-    print(f'Using lucene {lucene.VERSION}')
-    print('-----------------------------------')
     reader = DirectoryReader.open(FSDirectory.open(Paths.get(INDEX_PATH)))
     searcher = IndexSearcher(reader)
 
@@ -131,13 +132,10 @@ def search_for_drivers(d1, d2, year, results_n=10):
     Builds a query which find if two drivers have met in specified year.
     
     Query: 
-        title: (year && .* && grand && prix)
+        title: year
         &&
         content: (driver1 && driver2)
     """
-    print('-----------------------------------')
-    print(f'Using lucene {lucene.VERSION}')
-    print('-----------------------------------')
     reader = DirectoryReader.open(FSDirectory.open(Paths.get(INDEX_PATH)))
     searcher = IndexSearcher(reader)
 
@@ -157,7 +155,6 @@ def search_for_drivers(d1, d2, year, results_n=10):
 
     # extract paths to json files from the top_docs
     paths = [searcher.doc(score_doc.doc).get(DOC_ID_KEY) for score_doc in top_docs.scoreDocs]
-    print(paths)
     reader.close()
     return paths
 
@@ -168,13 +165,10 @@ def search_bad_weather(weather, year_range, results_n=10):
     drivers who DNF-ed will be extracted.
     
     Query:
-        title: (year(from range) && .* && grand && prix)
+        title: <year1; year2>
         &&
-        content: (word1 || word2 || ... || wordN)
+        content: weather
     """
-    print('-----------------------------------')
-    print(f'Using lucene {lucene.VERSION}')
-    print('-----------------------------------')
     
     years = year_range.split(' ')
 
@@ -205,15 +199,10 @@ def find_controversies(year_range, results_n=10):
     Finds GPs within the specified time period which were controversial.
 
     Query:
-        title: ((year && .* && grand && prix) || (year && .* && grand && prix))
+        title: <year1; year2>
         &&
-        content: (word1 || word2 || ... || wordN)
+        content: (controversy || unsafe || outrage)
     """
-    
-    print('-----------------------------------')
-    print(f'Using lucene {lucene.VERSION}')
-    print('-----------------------------------')
-    
     years = year_range.split(' ')
 
     reader = DirectoryReader.open(FSDirectory.open(Paths.get(INDEX_PATH)))

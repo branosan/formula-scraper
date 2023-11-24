@@ -1,9 +1,9 @@
 from . import *
 import lucene
-from .indexer import create_tfidf, lookup_document
 from .pylucene_indexer import create_index, basic_search, search_for_drivers, search_bad_weather, find_controversies
-from .queries import find_wins, find_most_wins, find_collegues, find_dnfs, join_controversy_context
-from .xml_parser import join_data
+from .queries import find_wins, find_dnfs,join_controversy_context
+from .data_parser import join_data
+from .tests import test_query1, test_query2, test_query3
 
 PATH_TO_PARSED_WIKI = './data/results'
 
@@ -114,7 +114,8 @@ if __name__ == '__main__':
 --------------------Called only once--------------------
 [p] Create PyLucene index     
 [j] Join data from csv and json files           
-[e] Create csv file with entities              
+[e] Create csv file with entities    
+[t] Run unit tests          
 [q] Quit
 ''')
         argv = argv.split(' ')
@@ -157,7 +158,7 @@ if __name__ == '__main__':
                     continue
                 files = search_for_drivers(p1, p2, year)
                 wins_dict = find_wins(p1, p2, files)
-                
+                print(wins_dict)
                 # print results
                 print(f'\n{p1.title()} and {p2.title()} met during:')
                 for key, value in wins_dict.items():
@@ -170,6 +171,7 @@ if __name__ == '__main__':
                 min_dnfs = int(input('Enter minimum number of DNFs: '))
                 files = search_bad_weather(weather, years)
                 dnfs_dict = find_dnfs(files, min_dnfs)
+                print(dnfs_dict)
                 # print results
                 years = years.split(' ')
                 print(f'\nBetween {years[0]}-{years[1]} it was {weather} on:')
@@ -181,6 +183,7 @@ if __name__ == '__main__':
                 years = input('Enter year year range [<year1> <year2>]: ')
                 files = find_controversies(years)
                 result_dict = join_controversy_context(files)
+                print(result_dict)
                 # print results
                 years = years.split(' ')
                 for gp, value in result_dict.items():
@@ -193,10 +196,16 @@ if __name__ == '__main__':
             elif choice == '4':
                 query = input('Enter query: ')
                 basic_search(query)
-            _ = input('Press ENTER to continue...')
+            _ = input('\nPress ENTER to continue...')
 
         elif argv[0].lower() == 'e':
             find_entities()
+
+        elif argv[0].lower() == 't':
+            test_query1()
+            test_query2()
+            test_query3()
+            _ = input('\nPress ENTER to continue...')
 
         elif argv[0].lower() == 'q':
             print('Quiting...')

@@ -9,17 +9,20 @@ def find_wins(p1, p2, files):
             year = json_data['title'].split(' ')[0]
             gp_name = '-'.join(json_data['title'].split(' ')[1:]).lower()
             
-            df = pd.DataFrame(json_data['results'])
-            df['POS'] = df['POS'].astype(int)
-            filtered_p1 = df[(df['DRIVER NAME'].str.contains(p1, case=False))]
-            filtered_p2 = df[(df['DRIVER NAME'].str.contains(p2, case=False))]
-            if filtered_p1.shape[0] == 0 or filtered_p2.shape[0] == 0:
-                continue
-            # check if both pilots finished the race
-            pos_x = 'DNF' if filtered_p1['POS'].values[0] < 0 else filtered_p1['POS'].values[0]
-            pos_y = 'DNF' if filtered_p2['POS'].values[0] < 0 else filtered_p2['POS'].values[0]
-            # add print statement to results
+            # if not empty
             
+            df = pd.DataFrame(json_data['results'])
+            if not df.empty:
+                df['POS'] = df['POS'].astype(int)
+                filtered_p1 = df[(df['DRIVER NAME'].str.contains(p1, case=False))]
+                filtered_p2 = df[(df['DRIVER NAME'].str.contains(p2, case=False))]
+                # check if both pilots finished the race
+                pos_x = 'DNF' if filtered_p1['POS'].values[0] < 0 else filtered_p1['POS'].values[0]
+                pos_y = 'DNF' if filtered_p2['POS'].values[0] < 0 else filtered_p2['POS'].values[0]
+                # add print statement to results
+            else:
+                pos_x = 'NA'
+                pos_y = 'NA'
             results[f'{year}-{gp_name}'] = {p1.title(): pos_x, p2.title(): pos_y}
     return results
 
@@ -37,16 +40,20 @@ def find_dnfs(files, min_dnfs):
             json_data = json.load(f)
             year = int(json_data['title'].split(' ')[0])
             gp_name = '-'.join(json_data['title'].split(' ')[1:]).lower()
+            # if not empty
             df = pd.DataFrame(json_data['results'])
-            df['POS'] = df['POS'].astype(int)
+            if not df.empty:
+                df['POS'] = df['POS'].astype(int)
 
-            dnf_df = df[df['POS'] < 0]
-            if dnf_df.shape[0] == 0:
-                continue
-            
-            dnfs = dnf_df.shape[0]
-            if dnfs >= min_dnfs:
-                results[f'{year}-{gp_name}'] = dnf_df.shape[0]
+                dnf_df = df[df['POS'] < 0]
+                if dnf_df.shape[0] == 0:
+                    continue
+                
+                dnfs = dnf_df.shape[0]
+                if dnfs >= min_dnfs:
+                    results[f'{year}-{gp_name}'] = dnf_df.shape[0]
+            else:
+                results[f'{year}-{gp_name}'] = 'NA'
     return results
 
 def join_controversy_context(files):
