@@ -54,7 +54,8 @@ python -m src
 [c] Launch crawler "c [max_depth] [url]"
 [s] Full text search "s [string]"
 --------------------Called only once--------------------
-[p] Create PyLucene index                
+[p] Create PyLucene index
+[j] Join data from csv and json files                
 [e] Create csv file with entities              
 [q] Quit
 </pre>
