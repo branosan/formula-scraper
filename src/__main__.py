@@ -1,16 +1,11 @@
 from . import *
 import lucene
 from .indexer import create_tfidf, lookup_document
-from .pylucene_indexer import test_index, basic_search, search_for_drivers, search_bad_weather, find_controversies
+from .pylucene_indexer import create_index, basic_search, search_for_drivers, search_bad_weather, find_controversies
 from .queries import find_wins, find_most_wins, find_collegues, find_dnfs, join_controversy_context
-from .xml_parser import extract_pages_xml_stream
+from .xml_parser import join_data
 
-# TODO:
-# Odtestovat ci funguje vyhladavanie v pylucene
-# Najprv najst veci cez queri teda nejake mena jazdcov a rok zadat a to najde kedy sa aky jazdci stretli
-#    nasledne z query vybrat regexom napr. meno velkej ceny a rok a najst v tom roku kto vyhral na velkej cene
-# 2) Najst velke ceny kde prsalo z intervalu rokov a spocitat kolko jazdcov DNF
-# 3) Najst zavody s kontroverziou a najst vsetkych jazdcov ktory sa zucastnili spolu s ich poziciou na finishi
+PATH_TO_PARSED_WIKI = './data/results'
 
 def clear_screen():
     if os.name == 'posix':  # Unix/Linux/MacOS
@@ -20,6 +15,7 @@ def clear_screen():
 
 
 def get_text():
+    # DEPRECATED
     os.makedirs('./procesed_data', exist_ok=True)
     full_text = open('./procesed_data/fulltext.txt', 'a+')
 
@@ -58,7 +54,9 @@ def create_documents():
                 print(f'ERROR {path}')
 
 def find_entities():
-    output = open('./procesed_data/entities.csv', 'w')
+    # create folder where csv will be stored if it doesn't already exist
+    os.makedirs('./data/procesed_data/', exist_ok=True)
+    output = open('./data/procesed_data/entities.csv', 'w')
 
     file_structure = list(os.walk('./data/https:/pitwall.app', topdown=True))
     structure_size = len(file_structure)
@@ -102,10 +100,6 @@ def find_entities():
                 break
     output.close()
 
-def find(pattern):
-    # grep -i -r 'formula' ./data
-    os.system(f'grep -i -r \'{pattern}\' ./fulltext.txt')
-
 if __name__ == '__main__':
     # https://pitwall.app/seasons
     # https://www.wikiwand.com/en/Formula_One
@@ -117,15 +111,10 @@ if __name__ == '__main__':
 =========================Menu===========================
 [c] Launch crawler "c <max_depth> <url>"
 [s] Full text search "s <string>"
-[d] Create documents for each hmtl file
-[f] Look for a pattern in the full text file 
-[l] Entity lookup
 --------------------Called only once--------------------
-[i] Create index
-[p] Create PyLucene index
-[t] Create full text file                 
-[e] Find entities
-[x] Extract pages from xml dump                    
+[p] Create PyLucene index     
+[j] Join data from csv and json files           
+[e] Create csv file with entities              
 [q] Quit
 ''')
         argv = argv.split(' ')
@@ -139,35 +128,22 @@ if __name__ == '__main__':
             except IndexError:
                 print('Invalid command', end='\r')
                 time.sleep(2)
-                continue
-
-        elif argv[0].lower() == 't':
-            print('Creating full text file...')
-            get_text()
-
-        elif argv[0].lower() == 'd':
-            print('Creating documents...')
-            create_documents()    
-
-        elif argv[0].lower() == 'i':
-            create_tfidf(dir='./data')
-
-        elif argv[0].lower() == 'f':
-            pattern = input('Enter a pattern: ')
-            top_docs = lookup_document(pattern)
-            # print top documents
-            _ = [print(doc) for doc in top_docs]
-            _ = input('Press ENTER to continue...')
+                continue 
 
         elif argv[0].lower() == 'p':
-            test_index()
+            create_index()
+            _ = input('Press ENTER to continue...')
+
+        elif argv[0].lower() == 'j':
+            join_data(wiki_folder=PATH_TO_PARSED_WIKI, csv_file='./data/procesed_data/df_entities.csv')
+            print('Joining data finished')
             _ = input('Press ENTER to continue...')
 
         elif argv[0].lower() == 's':
             choice = input('''
     [1] Find when two pilots met in a grand prix
     [2] Find GPs with bad weather and count DNFs
-    [3] Find the most controversial GPs and pilots [WIP]
+    [3] Find the most controversial GPs and pilots
     [4] Basic search
 :''')
             if choice == '1':
@@ -190,14 +166,16 @@ if __name__ == '__main__':
                     _ = [print(f'{k}: {v}') for k, v in value.items()]
             elif choice == '2':
                 years = input('Enter year year range [<year1> <year2>]: ')
-                files = search_bad_weather(years)
-                dnfs_dict = find_dnfs(files)
+                weather = input('Enter weather condition: ')
+                min_dnfs = int(input('Enter minimum number of DNFs: '))
+                files = search_bad_weather(weather, years)
+                dnfs_dict = find_dnfs(files, min_dnfs)
                 # print results
                 years = years.split(' ')
-                print(f'\nBetween {years[0]}-{years[1]} it rained on:')
+                print(f'\nBetween {years[0]}-{years[1]} it was {weather} on:')
                 for key, value in dnfs_dict.items():
-                    print('-'*30)
-                    print(f'{key}: DNFs {value}')
+                    print('='*10 + f'{key}' + '='*10)
+                    print(f'DNFs = {value}')
             
             elif choice == '3':
                 years = input('Enter year year range [<year1> <year2>]: ')
@@ -212,26 +190,13 @@ if __name__ == '__main__':
                         print('No drivers found in records...')
                         continue
                     _ = [print(f'{k}: {v}') for k, v in value['drivers'].items()]
-
-
-            elif choice == '2':
-                gp_name = input('Enter name of the grand prix: ')
-                print(find_most_wins(gp_name))
-            elif choice == '3':
-                p1 = input('Enter name of the first pilot: ')
-                p2 = input('Enter name of the second pilot: ')
-                print(find_collegues(p1, p2))
             elif choice == '4':
-                phrase = input('Enter search phrase: ')
-                basic_search(phrase)
+                query = input('Enter query: ')
+                basic_search(query)
             _ = input('Press ENTER to continue...')
 
         elif argv[0].lower() == 'e':
             find_entities()
-
-        elif argv[0].lower() == 'x':
-            extract_pages_xml_stream()
-            _ = input('Press ENTER to continue...')
 
         elif argv[0].lower() == 'q':
             print('Quiting...')

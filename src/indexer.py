@@ -1,5 +1,10 @@
 from . import *
 
+# DEPRECATED
+# This was my own indexer implementation before switching to PyLucene
+#
+# I left it in the repo so that you can see my own approach before implementing PyLucene
+
 PUNCTUATION = r'[^\w\s’]'
 
 def create_tfidf(dir='./data/https:/pitwall.app/races'):

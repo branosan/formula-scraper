@@ -6,10 +6,11 @@ import lucene
 from java.io import StringReader
 from java.nio.file import Paths
 from org.apache.lucene.analysis.standard import StandardAnalyzer
-from org.apache.lucene.document import Document, Field, TextField
-from org.apache.lucene.index import IndexWriter, IndexWriterConfig, DirectoryReader, Term
+from org.apache.lucene.document import Document, Field, TextField, StringField, FieldType
+from org.apache.lucene.index import IndexWriter, IndexWriterConfig, DirectoryReader, Term, IndexOptions
 from org.apache.lucene.search import IndexSearcher, Query, TermQuery, BooleanQuery, BooleanClause, FuzzyQuery, WildcardQuery, TermRangeQuery
 from org.apache.lucene.store import NIOFSDirectory, FSDirectory
+from org.apache.lucene.queryparser.classic import QueryParser
 
 INDEX_PATH = './pylucene_index'
 DOC_ID_KEY = 'id'
@@ -17,7 +18,7 @@ DOC_ID_KEY = 'id'
 BAD_WEATHER_TERMS = [
     'rain',
     'torrential',
-    'weather',
+    'cloudy',
     'wet',
     'storm',
     'collision',
@@ -31,16 +32,18 @@ CONTROVERSY_TERMS = [
     'outrage',
 ]
 
-def test_index(dir='data/wiki_dump/pages'):
+def create_index(dir='./data/results'):
     print('-----------------------------------')
     print(f'Using lucene {lucene.VERSION}')
     print('-----------------------------------')
-    if not os.path.exists(INDEX_PATH):
-        os.makedirs(INDEX_PATH)
+    os.makedirs(INDEX_PATH, exist_ok=True)
 
-    # load files to index
-    files = os.listdir(dir)
-    files_size = len(files)
+    # # load files to index
+    # files = os.listdir(dir)
+    # files_size = len(files)
+
+    file_structure = list(os.walk(dir, topdown=True))
+    structure_size = len(file_structure)
 
     # lucene.initVM()
 
@@ -53,23 +56,42 @@ def test_index(dir='data/wiki_dump/pages'):
     # Specify the directory where you want to create the index
     index_directory = NIOFSDirectory(Paths.get(INDEX_PATH))
 
+    # tokenized weather query
+    string_field_tokenized = FieldType()
+    string_field_tokenized.setStored(False)
+    string_field_tokenized.setTokenized(True)
+    string_field_tokenized.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS)
+
     writer = IndexWriter(index_directory, config)
 
-    for n, filename in enumerate(files):
-        print(f'{n}/{files_size}', end='\r')
-        if filename.endswith('.json'):
-            file_path = os.path.join(dir, filename)
-            # load all files in the data directory
-            with open(file_path, 'r', encoding='utf-8') as f:
-                json_data = json.load(f)
-    
-            document = Document()
-            document.add(Field(DOC_ID_KEY, file_path, TextField.TYPE_STORED))
-            document.add(Field('title', json_data['title'], TextField.TYPE_NOT_STORED))
-            document.add(Field('content', json_data['text'], TextField.TYPE_STORED))
-            writer.addDocument(document)
+    for n, (path, dirs, files) in enumerate(file_structure):
+        print(f'{n}/{structure_size}', end='\r')
+        for filename in files:
+            if filename.endswith('.json'):
+                file_path = os.path.join(path, filename)
+                # load all files in the data directory
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    json_data = json.load(f)
+        
+                document = Document()
+                document.add(Field(DOC_ID_KEY, file_path, TextField.TYPE_STORED))
+                # add names to the index
+                for d in json_data['results']:
+                    name = d['DRIVER NAME']
+                    # get rid of leading driver number in the name
+                    name = ' '.join(name.split()[1:])
+                    document.add(StringField('driver', name, Field.Store.YES))
+                document.add(Field('year', json_data['YEAR'], TextField.TYPE_NOT_STORED))
+                document.add(Field('weather', json_data['WEATHER'], string_field_tokenized))
+                document.add(Field('title', json_data['title'], TextField.TYPE_NOT_STORED))
+                document.add(Field('content', json_data['text'], TextField.TYPE_NOT_STORED))
+                writer.addDocument(document)
+                # commit every 200 documents
+                writer.commit() if n % 200 == 0 else None
 
+    writer.commit()
     writer.close()
+    index_directory.close()
     print('Finished creating index')
 
 def basic_search(phrase):
@@ -113,47 +135,33 @@ def search_for_drivers(d1, d2, year, results_n=10):
         &&
         content: (driver1 && driver2)
     """
-    # lucene.initVM()
     print('-----------------------------------')
     print(f'Using lucene {lucene.VERSION}')
     print('-----------------------------------')
     reader = DirectoryReader.open(FSDirectory.open(Paths.get(INDEX_PATH)))
     searcher = IndexSearcher(reader)
 
-    title_pattern = f'{year} * Grand Prix'.lower().split()
-
     boolean_query = BooleanQuery.Builder()
 
     # Find grand prix from the time period
     # handle year
-    title_sub_query = BooleanQuery.Builder()
-    year_term = TermQuery(Term('title', title_pattern[0]))
-    title_sub_query.add(year_term, BooleanClause.Occur.MUST)
-    # handle wildcard
-    wildcard_sub_quer = WildcardQuery(Term('title', f'{title_pattern[1]}'))
-    title_sub_query.add(wildcard_sub_quer, BooleanClause.Occur.MUST)
-    # handle "grand prix" term
-    for term in title_pattern[2:]:
-        title_term = TermQuery(Term('title', term))
-        title_sub_query.add(title_term, BooleanClause.Occur.MUST)
-
-    boolean_query.add(title_sub_query.build(), BooleanClause.Occur.MUST)
+    year_query = TermRangeQuery.newStringRange('year', year, year, True, True)
+    boolean_query.add(year_query, BooleanClause.Occur.MUST)
 
     for driver_name in [d1, d2]:
-        # split names into multiple terms
-        for part_name in driver_name.split(' '):
-            fuzzy_query = FuzzyQuery(Term('content', part_name), 2)
-            boolean_query.add(fuzzy_query, BooleanClause.Occur.MUST)
+        query = FuzzyQuery(Term('driver', driver_name), 2)
+        boolean_query.add(query, BooleanClause.Occur.MUST)
 
     query = boolean_query.build()
     top_docs = searcher.search(query, results_n)
 
     # extract paths to json files from the top_docs
     paths = [searcher.doc(score_doc.doc).get(DOC_ID_KEY) for score_doc in top_docs.scoreDocs]
+    print(paths)
     reader.close()
     return paths
 
-def search_bad_weather(year_range, results_n=10):
+def search_bad_weather(weather, year_range, results_n=10):
     """
     Builds a query which looks for a grand prix with bad weather.
     This will be later connected with my crawled csv file from which the number of
@@ -174,29 +182,17 @@ def search_bad_weather(year_range, results_n=10):
     searcher = IndexSearcher(reader)
 
     boolean_query = BooleanQuery.Builder()
-    title_sub_query = BooleanQuery.Builder()
     # Find grand prix from the time period
-    term_range_query = TermRangeQuery.newStringRange('numeric_field', years[0], years[1], True, True)
-    title_sub_query.add(term_range_query, BooleanClause.Occur.SHOULD)
-    title_pattern = f'* Grand Prix'.lower().split()
-    # handle wildcard "*"
-    wildcard_sub_quer = WildcardQuery(Term('title', f'{title_pattern[0]}'))
-    title_sub_query.add(wildcard_sub_quer, BooleanClause.Occur.MUST)
-    # handle "grand prix" term
-    for term in title_pattern[1:]:
-        title_term = TermQuery(Term('title', term))
-        title_sub_query.add(title_term, BooleanClause.Occur.MUST)
-    boolean_query.add(title_sub_query.build(), BooleanClause.Occur.MUST)
+    year_query = TermRangeQuery.newStringRange('year', years[0], years[1], True, True)
+    boolean_query.add(year_query, BooleanClause.Occur.MUST)
 
-    content_sub_query = BooleanQuery.Builder()
+    weather_sub_query = BooleanQuery.Builder()
     # Build query for page content
-    for term in BAD_WEATHER_TERMS:
-        # Use FuzzyQuery to find similar terms
-        fuzzy_query = FuzzyQuery(Term('content', term), 2)
-        content_sub_query.add(fuzzy_query, BooleanClause.Occur.SHOULD)
+    for token in weather.split():
+        fuzzy_query = FuzzyQuery(Term('weather', token), 2)
+        weather_sub_query.add(fuzzy_query, BooleanClause.Occur.SHOULD)
     
-    boolean_query.add(content_sub_query.build(), BooleanClause.Occur.MUST)
-    
+    boolean_query.add(weather_sub_query.build(), BooleanClause.Occur.MUST)
     query = boolean_query.build()
     top_docs = searcher.search(query, results_n)
     
