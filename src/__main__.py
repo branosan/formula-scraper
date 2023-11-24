@@ -1,10 +1,11 @@
 from . import *
-# import lucene
+import lucene
 from .indexer import create_tfidf, lookup_document
-# from .pylucene_indexer import create_index, basic_search, search_for_drivers, search_bad_weather, find_controversies
+from .pylucene_indexer import create_index, basic_search, search_for_drivers, search_bad_weather, find_controversies
 from .queries import find_wins, find_most_wins, find_collegues, find_dnfs, join_controversy_context
-from .xml_parser import extract_pages_xml_stream
+from .xml_parser import join_data
 
+PATH_TO_PARSED_WIKI = './data/results'
 
 def clear_screen():
     if os.name == 'posix':  # Unix/Linux/MacOS
@@ -102,7 +103,7 @@ def find_entities():
 if __name__ == '__main__':
     # https://pitwall.app/seasons
     # https://www.wikiwand.com/en/Formula_One
-    # lucene.initVM()
+    lucene.initVM()
     os.makedirs('./data', exist_ok=True)
     while True:
         clear_screen()
@@ -111,7 +112,8 @@ if __name__ == '__main__':
 [c] Launch crawler "c <max_depth> <url>"
 [s] Full text search "s <string>"
 --------------------Called only once--------------------
-[p] Create PyLucene index                
+[p] Create PyLucene index     
+[j] Join data from csv and json files           
 [e] Create csv file with entities              
 [q] Quit
 ''')
@@ -130,6 +132,11 @@ if __name__ == '__main__':
 
         elif argv[0].lower() == 'p':
             create_index()
+            _ = input('Press ENTER to continue...')
+
+        elif argv[0].lower() == 'j':
+            join_data(wiki_folder=PATH_TO_PARSED_WIKI, csv_file='./data/procesed_data/df_entities.csv')
+            print('Joining data finished')
             _ = input('Press ENTER to continue...')
 
         elif argv[0].lower() == 's':
@@ -183,6 +190,10 @@ if __name__ == '__main__':
                         print('No drivers found in records...')
                         continue
                     _ = [print(f'{k}: {v}') for k, v in value['drivers'].items()]
+            elif choice == '4':
+                query = input('Enter query: ')
+                basic_search(query)
+            _ = input('Press ENTER to continue...')
 
         elif argv[0].lower() == 'e':
             find_entities()
