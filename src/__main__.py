@@ -4,6 +4,7 @@ from .pylucene_indexer import create_index, basic_search, search_for_drivers, se
 from .queries import find_wins, find_dnfs,join_controversy_context
 from .data_parser import join_data
 from .tests import test_query1, test_query2, test_query3
+from .evaluate import evaluate
 
 PATH_TO_PARSED_WIKI = './data/results'
 
@@ -111,6 +112,7 @@ if __name__ == '__main__':
 =========================Menu===========================
 [c] Launch crawler "c <max_depth> <url>"
 [s] Full text search "s <string>"
+[v] Evaluate search results
 --------------------Called only once--------------------
 [p] Create PyLucene index     
 [j] Join data from csv and json files           
@@ -197,6 +199,17 @@ if __name__ == '__main__':
                 query = input('Enter query: ')
                 basic_search(query)
             _ = input('\nPress ENTER to continue...')
+
+        elif argv[0].lower() == 'v':
+            p1 = 'fernando alonso'
+            p2 = 'mark webber'
+            year = '2004'
+            files = search_for_drivers(p1, p2, year)
+            wins_dict = find_wins(p1, p2, files)
+            tp, fp, fn = evaluate(wins_dict)
+            print(f'Recall: {tp / (tp + fn)}')
+            print(f'Precision: {tp / (tp + fp)}')
+            _ = input('Press ENTER to continue...')
 
         elif argv[0].lower() == 'e':
             find_entities()
