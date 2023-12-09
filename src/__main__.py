@@ -207,8 +207,8 @@ if __name__ == '__main__':
             files = search_for_drivers(p1, p2, year)
             wins_dict = find_wins(p1, p2, files)
             tp, fp, fn = evaluate(wins_dict)
-            print(f'Recall: {tp / (tp + fn)}')
-            print(f'Precision: {tp / (tp + fp)}')
+            print(f'Recall: {tp / (tp + fn):.2f}')
+            print(f'Precision: {tp / (tp + fp):.2f}')
             _ = input('Press ENTER to continue...')
 
         elif argv[0].lower() == 'e':
